@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fab_dracailles/models/match_type_model.dart';
 import 'package:fab_dracailles/theme/colors.dart';
 import 'package:flutter/material.dart';
 
@@ -24,26 +25,30 @@ class _MatchScreenState extends State<MatchScreen>
   late List<GamePlayer> _players;
   late List<String> _history;
 
-  String _matchType = "Standard";
   final int _dieSides = 6;
   int _rolledNumber = 1;
   bool _rolling = false;
-  int _timerDuration = 55 * 60; // 50 minutes in seconds
-  int _timeLeft = 55 * 60; // Timer duration in seconds
+
+  late MatchType _matchType;
+  late int _timerDuration;
+  late int _timeLeft;
   Timer? _timer;
   bool _timerStarted = false; // Track if the timer has started
+
   final List<Color> _colorsToSelect = ThemeColors.colorsPlayerGame;
 
   void initGame() {
+    _timerDuration = _matchType.durationGame;
+    _timeLeft = _matchType.durationGame;
     _players = [
       GamePlayer(
-        name: 'Joueur 1',
-        color: _colorsToSelect[0],
-      ),
+          name: 'Joueur 1',
+          color: _colorsToSelect[0],
+          life: _matchType.lifeGamePlayer),
       GamePlayer(
-        name: 'Joueur 2',
-        color: _colorsToSelect[1],
-      ),
+          name: 'Joueur 2',
+          color: _colorsToSelect[1],
+          life: _matchType.lifeGamePlayer),
     ];
     _history = [];
   }
@@ -51,6 +56,7 @@ class _MatchScreenState extends State<MatchScreen>
   @override
   void initState() {
     super.initState();
+    _matchType = MatchType.initMatch();
     initGame();
   }
 
@@ -61,11 +67,12 @@ class _MatchScreenState extends State<MatchScreen>
   }
 
   void _resetGame() {
-    _players[0].life = 40;
-    _players[1].life = 40;
+    _players[0].life = _matchType.lifeGamePlayer;
+    _players[1].life = _matchType.lifeGamePlayer;
     setState(() {
       _history = [];
-      _timeLeft = _timerDuration; // Reset the timer
+      _timeLeft = _matchType.durationGame; // Reset the timer
+      _timerDuration = _matchType.durationGame;
       _timerStarted = false; // Allow the timer to be started again
     });
     _timer?.cancel();
@@ -224,33 +231,32 @@ class _MatchScreenState extends State<MatchScreen>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text("Match Type"),
-                DropdownButton<String>(
-                  value: _matchType,
+                DropdownButton<MatchTypeEnum>(
+                  value: _matchType.type,
                   dropdownColor: Colors.white,
                   focusColor: Colors.white,
-                  items: const [
-                    DropdownMenuItem(
-                      value: "Classic Constructed",
-                      child: Text("Classic Constructed"),
-                    ),
-                    DropdownMenuItem(
-                      value: "Blitz",
-                      child: Text("Blitz"),
-                    ),
-                  ],
+                  items: MatchTypeEnum.values.map((matchType) {
+                    return DropdownMenuItem(
+                      value: matchType,
+                      child: Text(matchType.name,
+                          style: const TextStyle(color: Colors.black)),
+                    );
+                  }).toList(),
                   onChanged: (value) {
                     if (value != null) {
                       setState(() {
-                        _matchType = value;
-                        _timerDuration = value == "Classic Constructed"
-                            ? 55 * 60
-                            : 35 * 60; // 50 minutes or 1 hour
-                        _timeLeft = _timerDuration; // Reset timer duration
+                        _matchType = MatchType(
+                          type: value,
+                          durationGame: MatchType.getDurationByType(value),
+                          lifeGamePlayer:
+                              MatchType.getLifeGamePlayerByType(value),
+                        );
+                        _resetGame(); // Reset du jeu si nécessaire
                       });
                     }
                     Navigator.of(context).pop();
                   },
-                ),
+                )
               ],
             ),
           ],
