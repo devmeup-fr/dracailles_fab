@@ -33,8 +33,13 @@ class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
     setState(() {
       if (widget.gamePlayer.life + amount >= -10) {
         widget.gamePlayer.adjustLife(amount);
-        widget.onLifeChanged(amount);
       }
+    });
+  }
+
+  void _lifeChangedHandle(int amount) {
+    setState(() {
+      widget.onLifeChanged(amount);
     });
   }
 
@@ -45,6 +50,7 @@ class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
 
     _temporaryLifeTimer?.cancel();
     _temporaryLifeTimer = Timer(const Duration(seconds: 1), () {
+      _lifeChangedHandle(_temporaryLifeChange);
       setState(() {
         _temporaryLifeChange = 0;
       });

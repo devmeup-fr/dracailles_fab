@@ -7,6 +7,18 @@ import 'package:flutter/material.dart';
 import '../models/game_player_model.dart';
 import '../widgets/life_tracker_widget.dart';
 
+class HistoryEntry {
+  final String? message;
+  final int? lifePoints;
+  final GamePlayer? player;
+
+  HistoryEntry({
+    this.message,
+    this.lifePoints,
+    this.player,
+  });
+}
+
 class MatchScreen extends StatefulWidget {
   const MatchScreen({super.key});
 
@@ -23,7 +35,7 @@ class _MatchScreenState extends State<MatchScreen>
   final GlobalKey<LifeTrackerWidgetState> _player2Key = GlobalKey();
 
   late List<GamePlayer> _players;
-  late List<String> _history;
+  late List<HistoryEntry> _history = [];
 
   final int _dieSides = 6;
   int _rolledNumber = 1;
@@ -101,7 +113,7 @@ class _MatchScreenState extends State<MatchScreen>
 
     setState(() {
       _rolling = false;
-      _history.add("Rolled: $_rolledNumber");
+      _history.add(HistoryEntry(message: "Rolled: $_rolledNumber"));
     });
 
     showDialog(
@@ -205,8 +217,78 @@ class _MatchScreenState extends State<MatchScreen>
         title: const Text("Life Changes History"),
         content: SingleChildScrollView(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: _history.map((entry) => Text(entry)).toList(),
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _players[0].name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Text(
+                    _players[1].name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(
+                  height: 8), // Espacement entre les noms et l'historique
+              ..._history.map((entry) {
+                if (entry.player == null && entry.message != null) {
+                  // Cas sans joueur
+                  return Column(
+                    children: [
+                      const Divider(),
+                      Text(
+                        entry.message!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                      const Divider(),
+                    ],
+                  );
+                } else {
+                  // Cas avec joueur
+                  return Row(
+                    children: [
+                      Expanded(
+                        flex: 1,
+                        child: entry.player == _players[0] &&
+                                entry.lifePoints != null
+                            ? Text(
+                                entry.lifePoints!.toString(),
+                                textAlign: TextAlign.left,
+                              )
+                            : const SizedBox.shrink(),
+                      ),
+                      Container(
+                        width: 1,
+                        height: 20,
+                        color: Colors.grey.shade400,
+                        margin: const EdgeInsets.symmetric(horizontal: 8),
+                      ),
+                      Expanded(
+                        flex: 1,
+                        child: entry.player == _players[1] &&
+                                entry.lifePoints != null
+                            ? Text(
+                                entry.lifePoints!.toString(),
+                                textAlign: TextAlign.right,
+                              )
+                            : const SizedBox.shrink(),
+                      ),
+                    ],
+                  );
+                }
+              }),
+            ],
           ),
         ),
         actions: [
@@ -297,9 +379,12 @@ class _MatchScreenState extends State<MatchScreen>
     });
   }
 
-  void addToHistory(String entry) {
+  void addToHistory(GamePlayer player, int lifePoint) {
     setState(() {
-      _history.add(entry);
+      _history = [
+        ..._history,
+        HistoryEntry(lifePoints: lifePoint, player: player)
+      ];
     });
   }
 
@@ -316,15 +401,13 @@ class _MatchScreenState extends State<MatchScreen>
                 gamePlayer: _players[0],
                 invertMode: true,
                 onLifeChanged: (amount) {
-                  addToHistory(
-                      "${_players[0].name} ${amount > 0 ? "gained" : "lost"} ${amount.abs()} life");
+                  addToHistory(_players[0], amount);
                 },
               ),
               LifeTrackerWidget(
                 gamePlayer: _players[1],
                 onLifeChanged: (amount) {
-                  addToHistory(
-                      "${_players[1].name} ${amount > 0 ? "gained" : "lost"} ${amount.abs()} life");
+                  addToHistory(_players[1], amount);
                 },
               ),
             ],
