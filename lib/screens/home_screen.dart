@@ -20,7 +20,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   List<TabItem> tabs = [
     TabItem(
-        label: "Match",
+        label: "Game",
         icon: Icons.gamepad,
         badge: Container(),
         screen: const MatchScreen()),

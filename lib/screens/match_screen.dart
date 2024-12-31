@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fab_dracailles/core/utils/localization_util.dart';
 import 'package:fab_dracailles/models/match_type_model.dart';
 import 'package:fab_dracailles/theme/colors.dart';
 import 'package:flutter/material.dart';
@@ -8,14 +9,12 @@ import '../models/game_player_model.dart';
 import '../widgets/life_tracker_widget.dart';
 
 class HistoryEntry {
-  final String? message;
-  final int? lifePoints;
-  final GamePlayer? player;
+  final int lifePoints;
+  final GamePlayer player;
 
   HistoryEntry({
-    this.message,
-    this.lifePoints,
-    this.player,
+    required this.lifePoints,
+    required this.player,
   });
 }
 
@@ -35,7 +34,7 @@ class _MatchScreenState extends State<MatchScreen>
   final GlobalKey<LifeTrackerWidgetState> _player2Key = GlobalKey();
 
   late List<GamePlayer> _players;
-  late List<HistoryEntry> _history = [];
+  late List<HistoryEntry> _history;
 
   final int _dieSides = 6;
   int _rolledNumber = 1;
@@ -52,17 +51,22 @@ class _MatchScreenState extends State<MatchScreen>
   void initGame() {
     _timerDuration = _matchType.durationGame;
     _timeLeft = _matchType.durationGame;
+    GamePlayer firstPlayer = GamePlayer(
+        name: 'Joueur 1',
+        color: _colorsToSelect[0],
+        life: _matchType.lifeGamePlayer);
+    GamePlayer secondPlayer = GamePlayer(
+        name: 'Joueur 2',
+        color: _colorsToSelect[1],
+        life: _matchType.lifeGamePlayer);
     _players = [
-      GamePlayer(
-          name: 'Joueur 1',
-          color: _colorsToSelect[0],
-          life: _matchType.lifeGamePlayer),
-      GamePlayer(
-          name: 'Joueur 2',
-          color: _colorsToSelect[1],
-          life: _matchType.lifeGamePlayer),
+      firstPlayer,
+      secondPlayer,
     ];
-    _history = [];
+    _history = [
+      HistoryEntry(lifePoints: _matchType.lifeGamePlayer, player: firstPlayer),
+      HistoryEntry(lifePoints: _matchType.lifeGamePlayer, player: secondPlayer)
+    ];
   }
 
   @override
@@ -82,7 +86,11 @@ class _MatchScreenState extends State<MatchScreen>
     _players[0].life = _matchType.lifeGamePlayer;
     _players[1].life = _matchType.lifeGamePlayer;
     setState(() {
-      _history = [];
+      _history = [
+        HistoryEntry(
+            lifePoints: _matchType.lifeGamePlayer, player: _players[0]),
+        HistoryEntry(lifePoints: _matchType.lifeGamePlayer, player: _players[1])
+      ];
       _timeLeft = _matchType.durationGame; // Reset the timer
       _timerDuration = _matchType.durationGame;
       _timerStarted = false; // Allow the timer to be started again
@@ -104,7 +112,6 @@ class _MatchScreenState extends State<MatchScreen>
     });
 
     for (int i = 0; i < 10; i++) {
-      await Future.delayed(const Duration(milliseconds: 100));
       setState(() {
         _rolledNumber =
             (1 + (DateTime.now().millisecondsSinceEpoch % _dieSides));
@@ -113,18 +120,19 @@ class _MatchScreenState extends State<MatchScreen>
 
     setState(() {
       _rolling = false;
-      _history.add(HistoryEntry(message: "Rolled: $_rolledNumber"));
     });
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text("Die Roll ($_dieSides sides)"),
-        content: Text("You rolled a $_rolledNumber"),
+        title: Text(context.translate('game.die.dieRoll',
+            translationParams: {"sides": _dieSides.toString()})),
+        content: Text(context.translate('game.die.dieRolled',
+            translationParams: {"rolledNumber": _rolledNumber.toString()})),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text("OK"),
+            child: Text(context.translate('common.ok')),
           ),
         ],
       ),
@@ -135,7 +143,7 @@ class _MatchScreenState extends State<MatchScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Changer la couleur des joueurs"),
+        title: Text(context.translate("player.changeColorPlayers")),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: _players.asMap().entries.map((entry) {
@@ -162,7 +170,7 @@ class _MatchScreenState extends State<MatchScreen>
                     onPressed: () {
                       selectPlayerColor(index);
                     },
-                    child: const Text("Changer la couleur"),
+                    child: Text(context.translate("player.changeColor")),
                   ),
                 ],
               ),
@@ -172,7 +180,7 @@ class _MatchScreenState extends State<MatchScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text("Fermer"),
+            child: Text(context.translate("common.close")),
           ),
         ],
       ),
@@ -183,7 +191,8 @@ class _MatchScreenState extends State<MatchScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text("Changer la couleur de ${_players[playerIndex].name}"),
+        title: Text(context.translate("player.changeColorPlayerName",
+            translationParams: {"name": _players[playerIndex].name})),
         content: Wrap(
           spacing: 10,
           children: _colorsToSelect.map((color) {
@@ -203,7 +212,7 @@ class _MatchScreenState extends State<MatchScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text("Annuler"),
+            child: Text(context.translate('common.cancel')),
           ),
         ],
       ),
@@ -211,92 +220,139 @@ class _MatchScreenState extends State<MatchScreen>
   }
 
   void showHistory() {
+    List<HistoryEntry> player0History =
+        _history.where((entry) => entry.player == _players[0]).toList();
+    List<HistoryEntry> player1History =
+        _history.where((entry) => entry.player == _players[1]).toList();
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Life Changes History"),
-        content: SingleChildScrollView(
+      builder: (context) => Dialog(
+        insetPadding: EdgeInsets.zero,
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.9),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                spreadRadius: 5,
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
             children: [
+              // Entête avec les noms des joueurs
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     _players[0].name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: 18,
+                      color: _players[0].color,
                     ),
                   ),
                   Text(
                     _players[1].name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: 18,
+                      color: _players[1].color,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(
-                  height: 8), // Espacement entre les noms et l'historique
-              ..._history.map((entry) {
-                if (entry.player == null && entry.message != null) {
-                  // Cas sans joueur
-                  return Column(
+              const SizedBox(height: 16),
+
+              // Utilisation de SingleChildScrollView pour le défilement
+              Expanded(
+                flex: 1,
+                child: SingleChildScrollView(
+                  child: Row(
                     children: [
-                      const Divider(),
-                      Text(
-                        entry.message!,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                      const Divider(),
-                    ],
-                  );
-                } else {
-                  // Cas avec joueur
-                  return Row(
-                    children: [
+                      // Historique du joueur 0
                       Expanded(
                         flex: 1,
-                        child: entry.player == _players[0] &&
-                                entry.lifePoints != null
-                            ? Text(
-                                entry.lifePoints!.toString(),
-                                textAlign: TextAlign.left,
-                              )
-                            : const SizedBox.shrink(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: player0History.map((entry) {
+                            return Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 8.0),
+                              child: Text(
+                                entry.lifePoints.toString(),
+                                style: TextStyle(
+                                  fontSize:
+                                      entry == player0History.last ? 24 : 16,
+                                  color: _players[0].color,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
                       ),
+                      // Séparateur vertical
                       Container(
                         width: 1,
-                        height: 20,
                         color: Colors.grey.shade400,
-                        margin: const EdgeInsets.symmetric(horizontal: 8),
                       ),
+                      // Historique du joueur 1
                       Expanded(
                         flex: 1,
-                        child: entry.player == _players[1] &&
-                                entry.lifePoints != null
-                            ? Text(
-                                entry.lifePoints!.toString(),
-                                textAlign: TextAlign.right,
-                              )
-                            : const SizedBox.shrink(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: player1History.map((entry) {
+                            return Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 8.0),
+                              child: Text(
+                                entry.lifePoints.toString(),
+                                style: TextStyle(
+                                  fontSize:
+                                      entry == player1History.last ? 24 : 16,
+                                  color: _players[1].color,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
                       ),
                     ],
-                  );
-                }
-              }),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Bouton de fermeture
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: ElevatedButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 40),
+                  backgroundColor: ThemeColors.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+                child: Text(
+                  context.translate('common.cancel'),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text("OK"),
-          ),
-        ],
       ),
     );
   }
@@ -305,14 +361,16 @@ class _MatchScreenState extends State<MatchScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Settings"),
+        title: Text(
+          context.translate('game.settings'),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text("Match Type"),
+                Text(context.translate('game.matchType')),
                 DropdownButton<MatchTypeEnum>(
                   value: _matchType.type,
                   dropdownColor: Colors.white,
@@ -346,7 +404,7 @@ class _MatchScreenState extends State<MatchScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text("Close"),
+            child: Text(context.translate('common.cancel')),
           ),
         ],
       ),
@@ -379,11 +437,11 @@ class _MatchScreenState extends State<MatchScreen>
     });
   }
 
-  void addToHistory(GamePlayer player, int lifePoint) {
+  void addToHistory(GamePlayer player) {
     setState(() {
       _history = [
         ..._history,
-        HistoryEntry(lifePoints: lifePoint, player: player)
+        HistoryEntry(lifePoints: player.life, player: player)
       ];
     });
   }
@@ -398,16 +456,16 @@ class _MatchScreenState extends State<MatchScreen>
           Column(
             children: [
               LifeTrackerWidget(
-                gamePlayer: _players[0],
+                gamePlayer: _players[1],
                 invertMode: true,
                 onLifeChanged: (amount) {
-                  addToHistory(_players[0], amount);
+                  addToHistory(_players[1]);
                 },
               ),
               LifeTrackerWidget(
-                gamePlayer: _players[1],
+                gamePlayer: _players[0],
                 onLifeChanged: (amount) {
-                  addToHistory(_players[1], amount);
+                  addToHistory(_players[0]);
                 },
               ),
             ],
@@ -434,17 +492,17 @@ class _MatchScreenState extends State<MatchScreen>
                           IconButton(
                             onPressed: showSettings,
                             icon: const Icon(Icons.settings, size: 30),
-                            tooltip: "Settings",
+                            tooltip: context.translate('game.settings'),
                           ),
                           IconButton(
                             onPressed: showHistory,
                             icon: const Icon(Icons.history, size: 30),
-                            tooltip: "View History",
+                            tooltip: context.translate("game.history"),
                           ),
                           IconButton(
                             onPressed: _rollDie,
                             icon: const Icon(Icons.casino, size: 30),
-                            tooltip: "Roll Die",
+                            tooltip: context.translate("game.die.rollDie"),
                           ),
                         ],
                       ),
@@ -455,17 +513,17 @@ class _MatchScreenState extends State<MatchScreen>
                           IconButton(
                             onPressed: () => changePlayersColor(),
                             icon: const Icon(Icons.color_lens, size: 30),
-                            tooltip: "Changer Couleur Joueur",
+                            tooltip: context.translate("player.changeColorPlayers"),
                           ),
                           IconButton(
                             onPressed: _reversePlayers,
                             icon: const Icon(Icons.swap_horiz, size: 30),
-                            tooltip: "Swap Players",
+                            tooltip: context.translate("game.swapPlayer"),
                           ),
                           IconButton(
                             onPressed: _resetGame,
                             icon: const Icon(Icons.refresh, size: 30),
-                            tooltip: "Reset Life",
+                            tooltip: context.translate("game.resetGame"),
                           ),
                         ],
                       ),

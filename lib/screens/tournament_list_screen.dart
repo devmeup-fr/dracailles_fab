@@ -1,3 +1,4 @@
+import 'package:fab_dracailles/core/utils/localization_util.dart';
 import 'package:flutter/material.dart';
 
 import '../models/tournament_model.dart';
@@ -9,7 +10,7 @@ class TournamentListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Tournois")),
+      appBar: AppBar(title: Text(context.translate('tournament.entityName.1'))),
       body: FutureBuilder<List<Tournament>>(
         future: TournamentService().getTournaments(),
         builder: (context, snapshot) {
@@ -17,7 +18,9 @@ class TournamentListScreen extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            return Center(child: Text("Erreur : ${snapshot.error}"));
+            return Center(
+                child: Text(
+                    "${context.translate("common.errors.title")} : ${snapshot.error}"));
           }
           final tournaments = snapshot.data ?? [];
           return ListView.builder(
@@ -27,7 +30,8 @@ class TournamentListScreen extends StatelessWidget {
               return Card(
                 child: ListTile(
                   title: Text(tournament.name),
-                  subtitle: Text("Date : ${tournament.date.toLocal()}"),
+                  subtitle: Text(
+                      "${context.translate('tournament.date')} : ${tournament.date.toLocal()}"),
                   trailing: Text(tournament.status),
                   onTap: () {
                     Navigator.pushNamed(

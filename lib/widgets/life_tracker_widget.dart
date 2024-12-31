@@ -49,7 +49,7 @@ class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
     });
 
     _temporaryLifeTimer?.cancel();
-    _temporaryLifeTimer = Timer(const Duration(seconds: 1), () {
+    _temporaryLifeTimer = Timer(const Duration(milliseconds: 800), () {
       _lifeChangedHandle(_temporaryLifeChange);
       setState(() {
         _temporaryLifeChange = 0;
