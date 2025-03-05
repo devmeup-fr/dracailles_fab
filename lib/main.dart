@@ -20,6 +20,10 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
 
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+  ]);
+
   // CLEAN PREF USE
   if (WITH_CLEAN_PREF) {
     await handlerCleanPref();

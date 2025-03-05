@@ -1,11 +1,4 @@
-enum MatchType {
-  Friendly,
-  Tournament,
-  Draft,
-  Sealed,
-  Blitz,
-  ClassicConstructed
-}
+import 'package:fab_dracailles/models/match_type_model.dart';
 
 class Match {
   String id;
@@ -28,7 +21,7 @@ class Match {
     return Match(
       id: json['id'],
       date: DateTime.parse(json['date']),
-      type: MatchType.values[json['type']],
+      type: MatchType.fromJson(json['type']),
       players: List<String>.from(json['players']),
       tournamentId: json['tournamentId'],
       winnerId: json['winnerId'],
@@ -39,7 +32,7 @@ class Match {
     return {
       'id': id,
       'date': date.toIso8601String(),
-      'type': type.index,
+      'type': type.toJson(),
       'players': players,
       'tournamentId': tournamentId,
       'winnerId': winnerId,

@@ -21,6 +21,8 @@ class LifeTrackerWidget extends StatefulWidget {
 
 class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
   Timer? _longPressTimer;
+  int _temporaryLifeChange = 0;
+  Timer? _temporaryLifeTimer;
 
   @override
   void initState() {
@@ -31,8 +33,27 @@ class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
     setState(() {
       if (widget.gamePlayer.life + amount >= -10) {
         widget.gamePlayer.adjustLife(amount);
-        widget.onLifeChanged(amount);
       }
+    });
+  }
+
+  void _lifeChangedHandle(int amount) {
+    setState(() {
+      widget.onLifeChanged(amount);
+    });
+  }
+
+  void _showTemporaryLifeChange(int amount) {
+    setState(() {
+      _temporaryLifeChange += amount;
+    });
+
+    _temporaryLifeTimer?.cancel();
+    _temporaryLifeTimer = Timer(const Duration(milliseconds: 800), () {
+      _lifeChangedHandle(_temporaryLifeChange);
+      setState(() {
+        _temporaryLifeChange = 0;
+      });
     });
   }
 
@@ -44,9 +65,11 @@ class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
 
   void _startLongPressTimer(int amount) {
     _adjustLife(amount);
+    _showTemporaryLifeChange(amount);
     _longPressTimer =
         Timer.periodic(const Duration(milliseconds: 500), (timer) {
       _adjustLife(amount);
+      _showTemporaryLifeChange(amount);
     });
   }
 
@@ -66,6 +89,20 @@ class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
           color: widget.gamePlayer.color,
           child: Stack(
             children: [
+              if (_temporaryLifeChange != 0)
+                Positioned(
+                  left: 300,
+                  top: 100,
+                  child: Text(
+                    (_temporaryLifeChange > 0 ? "+" : "") +
+                        _temporaryLifeChange.toString(),
+                    style: const TextStyle(
+                      fontSize: 30,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
               Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -93,13 +130,18 @@ class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
                             ),
                           ),
                         ),
-                        Text(
-                          widget.gamePlayer.life.toString(),
-                          style: const TextStyle(
-                            fontSize: 150,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Text(
+                              widget.gamePlayer.life.toString(),
+                              style: const TextStyle(
+                                fontSize: 150,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                         const Padding(
                           padding: EdgeInsets.only(left: 40.0),
@@ -121,7 +163,10 @@ class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
                 children: [
                   Expanded(
                     child: GestureDetector(
-                      onTap: () => _adjustLife(-1),
+                      onTap: () {
+                        _adjustLife(-1);
+                        _showTemporaryLifeChange(-1);
+                      },
                       onLongPressStart: (_) => _startLongPressTimer(-5),
                       onLongPressEnd: (_) => _stopLongPressTimer(),
                       onLongPressCancel: () => _stopLongPressTimer(),
@@ -132,7 +177,10 @@ class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
                   ),
                   Expanded(
                     child: GestureDetector(
-                      onTap: () => _adjustLife(1),
+                      onTap: () {
+                        _adjustLife(1);
+                        _showTemporaryLifeChange(1);
+                      },
                       onLongPressStart: (_) => _startLongPressTimer(5),
                       onLongPressEnd: (_) => _stopLongPressTimer(),
                       onLongPressCancel: () => _stopLongPressTimer(),

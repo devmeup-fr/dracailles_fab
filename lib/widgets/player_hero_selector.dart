@@ -1,3 +1,4 @@
+import 'package:fab_dracailles/core/utils/localization_util.dart';
 import 'package:flutter/material.dart';
 
 class PlayerHeroSelector extends StatefulWidget {
@@ -20,7 +21,7 @@ class _PlayerHeroSelectorState extends State<PlayerHeroSelector> {
     return Column(
       children: [
         DropdownButton<String>(
-          hint: const Text("Sélectionner un joueur"),
+          hint: Text(context.translate("player.selectPlayer")),
           value: _selectedPlayer,
           onChanged: (value) {
             setState(() {
@@ -35,7 +36,7 @@ class _PlayerHeroSelectorState extends State<PlayerHeroSelector> {
           }).toList(),
         ),
         DropdownButton<String>(
-          hint: const Text("Sélectionner un héros"),
+          hint: Text(context.translate("player.selectHero")),
           value: _selectedHero,
           onChanged: (value) {
             setState(() {

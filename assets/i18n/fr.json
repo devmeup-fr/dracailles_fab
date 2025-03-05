@@ -1,5 +1,85 @@
 {
     "common": {
-        "appTitle": "Les Dracailles FaB"
+        "appTitle": "Les Dracailles FaB",
+        "ok": "Ok",
+        "close": "Fermer",
+        "cancel": "Annuler",
+        "confirm": "Confirmer",
+        "delete": "Supprimer",
+        "edit": "Modifier",
+        "search": "Rechercher",
+        "errors": {
+            "title": "Erreur"
+        }
+    },
+    "player": {
+        "entityName": [
+            "Joueur",
+            "Joueurs"
+        ],
+        "selectPlayer": "Sélectionner un joueur",
+        "selectHero": "Sélectionner un héros",
+        "changeColorPlayers": "Changer la couleur des joueurs",
+        "changeColor": "Changer la couleur",
+        "changeColorPlayerName": "Changer la couleur de {name}",
+        "ranking": "Classement",
+        "winsLetter": "V",
+        "lossesLetter": "D",
+        "drawsLetter": "E"
+    },
+    "auth": {
+        "title": "Les Dracailles FaB",
+        "buttonLabel": "Connexion",
+        "username": "Utilisateur",
+        "password": "Mot de passe",
+        "confidentialPolicy": "Politique de confidentialité",
+        "biometrics": {
+            "title": "Authentification biométrique",
+            "localizedReason": "Authentification biométrique pour se connecter",
+            "askBiometrics": "Voulez-vous utiliser l'authentification biométrique pour les connexions futures ?"
+        },
+        "support": {
+            "askID": "Vous n'avez pas d'identifiants ?",
+            "buttonLabel": "Contacter le support"
+        },
+        "errors": {
+            "400": "Syntaxe incorrecte",
+            "401": "Identifiants invalides",
+            "402": "Session expirée",
+            "403": "Accès refusé",
+            "404": "Page introuvable",
+            "500": "Erreur serveur",
+            "fillFields": "Veuillez remplir les champs"
+        }
+    },
+    "match": {
+        "entityName": [
+            "Match FAB",
+            "Matchs FAB"
+        ],
+        "title": "Match",
+        "date": "Date"
+    },
+    "tournament": {
+        "entityName": [
+            "Tournoi",
+            "Tournois"
+        ],
+        "date": "Date",
+        "errors": {}
+    },
+    "game": {
+        "settings": "Paramètres",
+        "history": "Voir l'historique",
+        "matchType": "Type de match",
+        "swapPlayer": "Inverser les joueurs",
+        "resetGame": "Reinitialiser la partie",
+        "die": {
+            "dieType": "Type de dé",
+            "rollDie": "Lancer le dé",
+            "rollAgain": "Lancer de nouveau",
+            "dieRoll": "Dés lancé (D{sides})",
+            "dieRolled": "Vous avez fait {rolledNumber}"
+        }
     }
 }
