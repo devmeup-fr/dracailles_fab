@@ -18,6 +18,7 @@ class MatchService {
   }
 
   Future<void> updateMatch(Match match) async {
+    
     await _matchCollection.doc(match.id).update(match.toJson());
   }
 

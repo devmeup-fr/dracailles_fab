@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -19,6 +20,11 @@ const bool WITH_CLEAN_PREF = false;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: false,
+    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+  );
 
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,

@@ -56,7 +56,9 @@ class NavBar extends AppBar {
     if (isNeedingBackValidation) {
       final shouldLeave = await _showBackDialog(context);
       if (shouldLeave == true) {
-        Navigator.pop(context);
+        if (context.mounted) {
+          Navigator.pop(context);
+        }
       }
     } else if (handleChangeView != null) {
       handleChangeView();

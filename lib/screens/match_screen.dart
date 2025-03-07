@@ -513,7 +513,8 @@ class _MatchScreenState extends State<MatchScreen>
                           IconButton(
                             onPressed: () => changePlayersColor(),
                             icon: const Icon(Icons.color_lens, size: 30),
-                            tooltip: context.translate("player.changeColorPlayers"),
+                            tooltip:
+                                context.translate("player.changeColorPlayers"),
                           ),
                           IconButton(
                             onPressed: _reversePlayers,

@@ -79,10 +79,12 @@ class _AuthScreenState extends State<AuthScreen> {
       if (e is DioException) {
         debugPrint("Error code : ${e.response?.statusCode.toString()}");
         debugPrint(e.response?.data.toString());
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Center(
-                child: Text(context.translate(
-                    'auth.errors.${e.response?.statusCode ?? 500}')))));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Center(
+                  child: Text(context.translate(
+                      'auth.errors.${e.response?.statusCode ?? 500}')))));
+        }
       }
 
       if (mounted) {
@@ -215,10 +217,12 @@ class _AuthScreenState extends State<AuthScreen> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Center(
-              child: Text(context.translate(
-                  'auth.errors.${e is DioException ? (e.response?.statusCode ?? '500') : '500'}')))));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Center(
+                child: Text(context.translate(
+                    'auth.errors.${e is DioException ? (e.response?.statusCode ?? '500') : '500'}')))));
+      }
       setState(() {
         _isLoggingIn = false;
       });
