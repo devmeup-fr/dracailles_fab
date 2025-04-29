@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/blocs/locale_cubit.dart';
 import 'core/utils/localization_util.dart';
+import 'firebase_options.dart';
 import 'screens/home_screen.dart';
 import 'theme/themes.dart';
 
@@ -19,8 +20,9 @@ const bool WITH_CLEAN_PREF = false;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   FirebaseFirestore.instance.settings = const Settings(
     persistenceEnabled: false,
     cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,

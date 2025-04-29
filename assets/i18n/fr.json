@@ -13,10 +13,9 @@
         }
     },
     "player": {
-        "entityName": [
-            "Joueur",
-            "Joueurs"
-        ],
+        "entityName": "Joueur",
+        "entityNamePlural": "Joueurs",
+        "noData": "Aucun joueur trouvé",
         "selectPlayer": "Sélectionner un joueur",
         "selectHero": "Sélectionner un héros",
         "changeColorPlayers": "Changer la couleur des joueurs",
@@ -25,7 +24,9 @@
         "ranking": "Classement",
         "winsLetter": "V",
         "lossesLetter": "D",
-        "drawsLetter": "E"
+        "drawsLetter": "E",
+        "create": "Création",
+        "name": "Nom du joueur"
     },
     "auth": {
         "title": "Les Dracailles FaB",
@@ -53,18 +54,16 @@
         }
     },
     "match": {
-        "entityName": [
-            "Match FAB",
-            "Matchs FAB"
-        ],
+        "entityName": "Match FAB",
+        "entityNamePlural": "Matchs FAB",
         "title": "Match",
+        "noData": "Aucun match trouvé",
         "date": "Date"
     },
     "tournament": {
-        "entityName": [
-            "Tournoi",
-            "Tournois"
-        ],
+        "entityName": "Tournoi FAB",
+        "entityNamePlural": "Tournois FAB",
+        "noData": "Aucun tournoi trouvé",
         "date": "Date",
         "errors": {}
     },
@@ -79,7 +78,7 @@
             "rollDie": "Lancer le dé",
             "rollAgain": "Lancer de nouveau",
             "dieRoll": "Dés lancé (D{sides})",
-            "dieRolled": "Vous avez fait {rolledNumber}"
+            "dieRolled": "Vous avez fait"
         }
     }
 }

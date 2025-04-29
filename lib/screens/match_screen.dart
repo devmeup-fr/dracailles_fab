@@ -34,11 +34,10 @@ class _MatchScreenState extends State<MatchScreen>
   final GlobalKey<LifeTrackerWidgetState> _player2Key = GlobalKey();
 
   late List<GamePlayer> _players;
+  GamePlayer? _winner;
   late List<HistoryEntry> _history;
 
-  final int _dieSides = 6;
-  int _rolledNumber = 1;
-  bool _rolling = false;
+  int _dieSides = 6;
 
   late MatchType _matchType;
   late int _timerDuration;
@@ -49,6 +48,7 @@ class _MatchScreenState extends State<MatchScreen>
   final List<Color> _colorsToSelect = ThemeColors.colorsPlayerGame;
 
   void initGame() {
+    _winner = null;
     _timerDuration = _matchType.durationGame;
     _timeLeft = _matchType.durationGame;
     GamePlayer firstPlayer = GamePlayer(
@@ -85,6 +85,8 @@ class _MatchScreenState extends State<MatchScreen>
   void _resetGame() {
     _players[0].life = _matchType.lifeGamePlayer;
     _players[1].life = _matchType.lifeGamePlayer;
+    _winner = null;
+
     setState(() {
       _history = [
         HistoryEntry(
@@ -107,36 +109,112 @@ class _MatchScreenState extends State<MatchScreen>
   }
 
   Future<void> _rollDie() async {
-    setState(() {
-      _rolling = true;
-    });
-
-    for (int i = 0; i < 10; i++) {
-      setState(() {
-        _rolledNumber =
-            (1 + (DateTime.now().millisecondsSinceEpoch % _dieSides));
-      });
-    }
-
-    setState(() {
-      _rolling = false;
-    });
-
-    showDialog(
+    int? rolledNumber = _roll(_dieSides);
+    await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(context.translate('game.die.dieRoll',
-            translationParams: {"sides": _dieSides.toString()})),
-        content: Text(context.translate('game.die.dieRolled',
-            translationParams: {"rolledNumber": _rolledNumber.toString()})),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(context.translate('common.ok')),
-          ),
-        ],
-      ),
+      builder: (context) {
+        return StatefulBuilder(builder: (context, setModalState) {
+          return AlertDialog(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(context.translate('game.die.dieRoll',
+                    translationParams: {"sides": _dieSides.toString()})),
+                const Icon(Icons.casino, color: ThemeColors.primary),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<int>(
+                  value: _dieSides,
+                  dropdownColor: Colors.white,
+                  focusColor: Colors.white,
+                  decoration: InputDecoration(
+                    labelText: context.translate('game.die.dieType'),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                    filled: true,
+                    fillColor: Colors.grey[100],
+                  ),
+                  items: [2, 3, 4, 5, 6].map((sides) {
+                    return DropdownMenuItem(
+                      value: sides,
+                      child: Text("d$sides"),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() => _dieSides = value);
+                      setModalState(() => rolledNumber = null);
+
+                      Future.delayed(const Duration(milliseconds: 500), () {
+                        setModalState(() {
+                          rolledNumber = _roll(value);
+                        });
+                      });
+                    }
+                  },
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  context.translate('game.die.dieRolled'),
+                  style: const TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 8),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  transitionBuilder: (child, animation) =>
+                      ScaleTransition(scale: animation, child: child),
+                  child: Text(
+                    "${rolledNumber ?? '-'}",
+                    key: ValueKey(rolledNumber),
+                    style: const TextStyle(
+                      fontSize: 48,
+                      fontWeight: FontWeight.bold,
+                      color: ThemeColors.primary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.replay),
+                  label: Text(context.translate('game.die.rollAgain')),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ThemeColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () {
+                    setModalState(() => rolledNumber = null);
+
+                    Future.delayed(const Duration(milliseconds: 500), () {
+                      setModalState(() {
+                        rolledNumber = _roll(_dieSides);
+                      });
+                    });
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(context.translate('common.ok')),
+              ),
+            ],
+          );
+        });
+      },
     );
+  }
+
+  int _roll(int sides) {
+    return 1 + (DateTime.now().millisecondsSinceEpoch % sides);
   }
 
   void changePlayersColor() {
@@ -360,54 +438,188 @@ class _MatchScreenState extends State<MatchScreen>
   void showSettings() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          context.translate('game.settings'),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(context.translate('game.matchType')),
-                DropdownButton<MatchTypeEnum>(
-                  value: _matchType.type,
-                  dropdownColor: Colors.white,
-                  focusColor: Colors.white,
-                  items: MatchTypeEnum.values.map((matchType) {
-                    return DropdownMenuItem(
-                      value: matchType,
-                      child: Text(matchType.name,
-                          style: const TextStyle(color: Colors.black)),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() {
-                        _matchType = MatchType(
-                          type: value,
-                          durationGame: MatchType.getDurationByType(value),
-                          lifeGamePlayer:
-                              MatchType.getLifeGamePlayerByType(value),
-                        );
-                        _resetGame(); // Reset du jeu si nécessaire
-                      });
-                    }
-                    Navigator.of(context).pop();
-                  },
-                )
-              ],
+      builder: (context) {
+        return StatefulBuilder(builder: (context, setModalState) {
+          return Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
             ),
+            insetPadding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Titre
+                  Row(
+                    children: [
+                      const Icon(Icons.settings, color: Colors.black54),
+                      const SizedBox(width: 10),
+                      Text(
+                        context.translate('game.settings'),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 25),
+
+                  // Type de match
+                  Text(
+                    context.translate('game.matchType'),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<MatchTypeEnum>(
+                    value: _matchType.type,
+                    dropdownColor: Colors.white,
+                    focusColor: Colors.white,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.grey[100],
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 12),
+                    ),
+                    items: MatchTypeEnum.values.map((matchType) {
+                      return DropdownMenuItem(
+                        value: matchType,
+                        child: Text(matchType.displayName),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          _matchType = MatchType(
+                            type: value,
+                            durationGame: MatchType.getDurationByType(value),
+                            lifeGamePlayer:
+                                MatchType.getLifeGamePlayerByType(value),
+                          );
+                          _resetGame();
+                        });
+                        Navigator.of(context).pop();
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Joueur 1
+                  Text(
+                    "${context.translate('player.entityName')} 1",
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildPlayerTile(_players[0], 1, setModalState),
+                  const SizedBox(height: 16),
+
+                  // Joueur 2
+                  Text(
+                    "${context.translate('player.entityName')} 2",
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildPlayerTile(_players[1], 2, setModalState),
+
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: Text(context.translate('common.cancel')),
+                      ),
+                    ],
+                  )
+                ],
+              ),
+            ),
+          );
+        });
+      },
+    );
+  }
+
+  Widget _buildPlayerTile(GamePlayer player, int index,
+      void Function(void Function()) setModalState) {
+    return GestureDetector(
+      onTap: () => _selectOrCreatePlayer(index, setModalState),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              player.name.isEmpty
+                  ? context.translate('player.create')
+                  : player.name,
+              style: TextStyle(
+                fontSize: 16,
+                color: player.name.isEmpty ? Colors.grey : Colors.black87,
+              ),
+            ),
+            const Icon(Icons.edit, size: 18, color: Colors.grey),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(context.translate('common.cancel')),
-          ),
-        ],
       ),
+    );
+  }
+
+  void _selectOrCreatePlayer(
+      int playerNumber, void Function(void Function()) parentSetModalState) {
+    String tempName = _players[playerNumber - 1].name;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(builder: (context, setModalState) {
+          return AlertDialog(
+            title: Text(context.translate("player.selectPlayer")),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  initialValue: tempName,
+                  decoration: InputDecoration(
+                    labelText: context.translate("player.name"),
+                  ),
+                  onChanged: (value) {
+                    setModalState(() => tempName = value);
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(context.translate('common.cancel')),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _players[playerNumber - 1].name = tempName;
+                  });
+                  parentSetModalState(
+                      () {}); // Force rafraîchissement modale principale
+                  Navigator.of(context).pop();
+                },
+                child: Text(context.translate("player.create")),
+              ),
+            ],
+          );
+        });
+      },
     );
   }
 
@@ -444,6 +656,37 @@ class _MatchScreenState extends State<MatchScreen>
         HistoryEntry(lifePoints: player.life, player: player)
       ];
     });
+    _checkGameOver();
+  }
+
+  void _checkGameOver() {
+    if (_players[0].life <= 0) {
+      _winner = _players[1]; // Player 2 wins
+      _showWinnerDialog();
+    } else if (_players[1].life <= 0) {
+      _winner = _players[0]; // Player 1 wins
+      _showWinnerDialog();
+    }
+  }
+
+  // Show winner dialog when game is over
+  void _showWinnerDialog() {
+    if (_winner == null) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(context.translate('game.winner')),
+        content:
+            Text('$context.translate("game.congratulations") ${_winner!.name}'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(context.translate('common.ok')),
+          ),
+        ],
+      ),
+    );
   }
 
   @override

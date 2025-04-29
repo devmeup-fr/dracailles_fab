@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../models/player_model.dart';
 
 class PlayerService {
@@ -13,10 +14,12 @@ class PlayerService {
   }
 
   Future<void> createPlayer(Player player) async {
-    await _playerCollection.doc(player.id).set(player.toJson());
+    final docRef = await _playerCollection.add(player.toJson());
+    player.id = docRef.id;
   }
 
   Future<void> updatePlayer(Player player) async {
+    if (player.id == null) return;
     await _playerCollection.doc(player.id).update(player.toJson());
   }
 

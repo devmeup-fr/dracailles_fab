@@ -1,15 +1,15 @@
 class Player {
-  String id;
+  String? id;
   String name;
-  String email;
+  String? email;
   int ranking; // Classement global
   int wins;
   int losses;
 
   Player({
-    required this.id,
+    this.id,
     required this.name,
-    required this.email,
+    this.email,
     this.ranking = 0,
     this.wins = 0,
     this.losses = 0,

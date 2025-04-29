@@ -1,4 +1,22 @@
-enum MatchTypeEnum { Draft, Sealed, Blitz, ClassicConstructed }
+enum MatchTypeEnum {
+  draft,
+  sealed,
+  blitz,
+  classicConstructed;
+
+  String get displayName {
+    switch (this) {
+      case MatchTypeEnum.draft:
+        return "Draft";
+      case MatchTypeEnum.sealed:
+        return "Sealed";
+      case MatchTypeEnum.blitz:
+        return "Blitz";
+      case MatchTypeEnum.classicConstructed:
+        return "Classic Constructed";
+    }
+  }
+}
 
 class MatchType {
   MatchTypeEnum type;
@@ -28,18 +46,18 @@ class MatchType {
   }
 
   static int getDurationByType(MatchTypeEnum type) {
-    return type == MatchTypeEnum.ClassicConstructed ? 50 * 60 : 30 * 60;
+    return type == MatchTypeEnum.classicConstructed ? 50 * 60 : 30 * 60;
   }
 
   static int getLifeGamePlayerByType(MatchTypeEnum type) {
-    return type == MatchTypeEnum.ClassicConstructed ? 40 : 20;
+    return type == MatchTypeEnum.classicConstructed ? 40 : 20;
   }
 
   static MatchType initMatch() {
     return MatchType(
-      type: MatchTypeEnum.ClassicConstructed,
-      durationGame: getDurationByType(MatchTypeEnum.ClassicConstructed),
-      lifeGamePlayer: getLifeGamePlayerByType(MatchTypeEnum.ClassicConstructed),
+      type: MatchTypeEnum.classicConstructed,
+      durationGame: getDurationByType(MatchTypeEnum.classicConstructed),
+      lifeGamePlayer: getLifeGamePlayerByType(MatchTypeEnum.classicConstructed),
     );
   }
 }
