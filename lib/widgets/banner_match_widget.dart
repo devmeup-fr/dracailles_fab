@@ -5,12 +5,14 @@ import 'package:fab_dracailles/models/game_player_model.dart';
 import 'package:fab_dracailles/models/match_type_model.dart';
 import 'package:fab_dracailles/screens/match_screen.dart';
 import 'package:fab_dracailles/theme/colors.dart';
+import 'package:fab_dracailles/widgets/radial_menu_widget.dart';
 import 'package:flutter/material.dart';
 
 class BannerMatchWidget extends StatefulWidget {
   final Function resetGame;
   final Function reversePlayers;
   final List<GamePlayer> players;
+  final Function setPlayers;
   final List<HistoryEntry> history;
   final MatchType matchType;
   final Function setMatchType;
@@ -20,6 +22,7 @@ class BannerMatchWidget extends StatefulWidget {
       required this.resetGame,
       required this.reversePlayers,
       required this.players,
+      required this.setPlayers,
       required this.history,
       required this.matchType,
       required this.setMatchType});
@@ -33,14 +36,18 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
   Timer? _timer;
   late int _timerDuration;
   late int _timeLeft;
-  bool _timerStarted = false; // Track if the timer has started
+  bool _timerStarted = false;
+
+  OverlayEntry? Entry;
+  final GlobalKey _logoKey = GlobalKey();
+  final LayerLink _logoLink = LayerLink();
 
   final List<Color> _colorsToSelect = ThemeColors.colorsPlayerGame;
 
   void initGame() {
-    _timeLeft = widget.matchType.durationGame; // Reset the timer
+    _timeLeft = widget.matchType.durationGame;
     _timerDuration = widget.matchType.durationGame;
-    _timerStarted = false; // Allow the timer to be started again
+    _timerStarted = false;
   }
 
   @override
@@ -171,8 +178,8 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
         title: Text(context.translate("player.changeColorPlayers")),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          children: widget.players.asMap().entries.map((entry) {
-            int index = entry.key;
+          children:
+              widget.players.reversed.toList().asMap().entries.map((entry) {
             GamePlayer player = entry.value;
 
             return Padding(
@@ -193,7 +200,7 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                   const SizedBox(width: 10),
                   ElevatedButton(
                     onPressed: () {
-                      selectPlayerColor(index);
+                      selectPlayerColor(player.index);
                     },
                     child: Text(context.translate("player.changeColor")),
                   ),
@@ -223,9 +230,16 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
           children: _colorsToSelect.map((color) {
             return GestureDetector(
               onTap: () {
-                setState(() {
-                  widget.players[playerIndex].color = color;
-                });
+                List<GamePlayer> updatePlayers = widget.players;
+                int indexOfPlayerByIndex(
+                        List<GamePlayer> players, int wantedIndex) =>
+                    players.indexWhere((p) => p.index == wantedIndex);
+
+                final idx = indexOfPlayerByIndex(updatePlayers, playerIndex);
+                if (idx != -1) {
+                  updatePlayers[idx].color = color;
+                }
+                widget.setPlayers(updatePlayers);
                 Navigator.of(context).pop();
                 Navigator.of(context).pop();
                 changePlayersColor();
@@ -274,7 +288,6 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Entête avec les noms des joueurs
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -298,7 +311,6 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
               ),
               const SizedBox(height: 16),
 
-              // Utilisation de SingleChildScrollView pour le défilement
               Expanded(
                 flex: 1,
                 child: SingleChildScrollView(
@@ -325,7 +337,6 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                           }).toList(),
                         ),
                       ),
-                      // Séparateur vertical
                       Container(
                         width: 1,
                         color: Colors.grey.shade400,
@@ -401,7 +412,6 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Titre
                   Row(
                     children: [
                       const Icon(Icons.settings, color: Colors.black54),
@@ -450,6 +460,7 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                           lifeGamePlayer:
                               MatchType.getLifeGamePlayerByType(value),
                         ));
+                        initGame();
                         widget.resetGame();
                         _timer?.cancel();
                         Navigator.of(context).pop();
@@ -558,8 +569,7 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                   setState(() {
                     widget.players[playerNumber - 1].name = tempName;
                   });
-                  parentSetModalState(
-                      () {}); // Force rafraîchissement modale principale
+                  parentSetModalState(() {});
                   Navigator.of(context).pop();
                 },
                 child: Text(context.translate("player.create")),
@@ -597,108 +607,201 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
     });
   }
 
+  void _openRadialMenu() {
+    if (Entry != null) return;
+    final overlay = Overlay.of(context);
+
+    // Position du logo pour centrer la roue
+    final box = _logoKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null) return;
+
+    final size = box.size;
+    final offset = box.localToGlobal(Offset.zero);
+    final center = offset + Offset(size.width / 2, size.height / 2);
+
+    Entry = OverlayEntry(
+      builder: (ctx) {
+        return Stack(
+          children: [
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: _closeRadialMenu,
+                child: Container(color: Colors.black.withOpacity(0.35)),
+              ),
+            ),
+            Positioned.fill(
+              child: RadialMenu(
+                center: center,
+                radius: 100,
+                items: [
+                  RadialAction(
+                    icon: Icons.settings,
+                    tooltip: context.translate('game.matchType'),
+                    onTap: () {
+                      _closeRadialMenu();
+                      showSettings();
+                    },
+                  ),
+                  RadialAction(
+                    icon: Icons.history,
+                    tooltip: context.translate('game.history'),
+                    onTap: () {
+                      _closeRadialMenu();
+                      showHistory();
+                    },
+                  ),
+                  RadialAction(
+                    icon: Icons.casino,
+                    tooltip: context.translate('game.die.rollDie'),
+                    onTap: () {
+                      _closeRadialMenu();
+                      _rollDie();
+                    },
+                  ),
+                  RadialAction(
+                    icon: Icons.color_lens,
+                    tooltip: context.translate('player.changeColorPlayers'),
+                    onTap: () {
+                      _closeRadialMenu();
+                      changePlayersColor();
+                    },
+                  ),
+                  RadialAction(
+                    icon: Icons.swap_horiz,
+                    tooltip: context.translate('game.swapPlayer'),
+                    onTap: () {
+                      _closeRadialMenu();
+                      widget.reversePlayers();
+                    },
+                  ),
+                  RadialAction(
+                    icon: Icons.refresh,
+                    tooltip: context.translate('game.resetGame'),
+                    onTap: () {
+                      _closeRadialMenu();
+                      widget.resetGame();
+                      _timer?.cancel();
+                      setState(() {
+                        _timeLeft = widget.matchType.durationGame;
+                        _timerDuration = widget.matchType.durationGame;
+                        _timerStarted = false;
+                      });
+                    },
+                  ),
+                  // Timer: start/pause selon l’état
+                  RadialAction(
+                    icon: _timerStarted ? Icons.pause : Icons.play_arrow,
+                    tooltip: _timerStarted
+                        ? context.translate('game.timer.pause')
+                        : context.translate('game.timer.start'),
+                    onTap: () {
+                      _closeRadialMenu();
+                      if (_timerStarted) {
+                        toggleTimer();
+                      } else {
+                        startTimer();
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    overlay.insert(Entry!);
+  }
+
+  void _closeRadialMenu() {
+    Entry?.remove();
+    Entry = null;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.center,
+    final media = MediaQuery.of(context);
+    final bool isCompact = media.size.width < 360;
+    final double circleDiameter = isCompact ? 140.0 : 160.0;
+    final double timerFontSize = circleDiameter * 0.16;
+
+    return SizedBox.expand(
       child: Stack(
-        alignment: Alignment.center,
-        clipBehavior: Clip.none,
+        fit: StackFit.expand,
         children: [
-          // Action bar background (full width)
-          Container(
-            color: Colors.white,
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Left-side buttons
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: showSettings,
-                      icon: const Icon(Icons.settings, size: 30),
-                      tooltip: context.translate('game.settings'),
-                    ),
-                    IconButton(
-                      onPressed: showHistory,
-                      icon: const Icon(Icons.history, size: 30),
-                      tooltip: context.translate("game.history"),
-                    ),
-                    IconButton(
-                      onPressed: _rollDie,
-                      icon: const Icon(Icons.casino, size: 30),
-                      tooltip: context.translate("game.die.rollDie"),
-                    ),
-                  ],
-                ),
-
-                // Right-side buttons
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => changePlayersColor(),
-                      icon: const Icon(Icons.color_lens, size: 30),
-                      tooltip: context.translate("player.changeColorPlayers"),
-                    ),
-                    IconButton(
-                      onPressed: () => widget.reversePlayers(),
-                      icon: const Icon(Icons.swap_horiz, size: 30),
-                      tooltip: context.translate("game.swapPlayer"),
-                    ),
-                    IconButton(
-                      onPressed: () {
-                        widget.resetGame();
-                        _timer?.cancel();
-                      },
-                      icon: const Icon(Icons.refresh, size: 30),
-                      tooltip: context.translate("game.resetGame"),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          // Logo placed on top of the action bar
-          Positioned(
-            top: -37, // Adjust to ensure overlap
-            child: GestureDetector(
-              onTap: _timerDuration == _timeLeft
-                  ? startTimer
-                  : toggleTimer, // Disable logo tap after start
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white,
-                ),
-                child: Column(
-                  children: [
-                    Stack(
-                      children: [
-                        Image.asset(
-                          'assets/images/logo_dracailles_min.png',
-                          height: 100,
+          Align(
+            alignment: Alignment.center,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 12.0),
+              child: CompositedTransformTarget(
+                link: _logoLink,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _openRadialMenu,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        key: _logoKey,
+                        width: circleDiameter,
+                        height: circleDiameter,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
                         ),
-                        if (!_timerStarted && _timerDuration != _timeLeft)
-                          Center(
-                            child: Icon(
-                              Icons.pause_circle_filled,
-                              size: 100,
-                              color: Colors.white.withValues(alpha: 0.8),
+                        clipBehavior: Clip.antiAlias,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            // Logo centré
+                            Center(
+                              child: Image.asset(
+                                'assets/images/logo_dracailles_min.png',
+                                height: circleDiameter *
+                                    (_timerDuration != _timeLeft ? 0.8 : 1),
+                                fit: BoxFit.contain,
+                              ),
                             ),
-                          ),
-                      ],
-                    ),
-                    if (_timerDuration != _timeLeft)
-                      Text(
-                        '${_timeLeft ~/ 60}:${(_timeLeft % 60).toString().padLeft(2, '0')}',
-                        style: const TextStyle(
-                            fontSize: 24, fontWeight: FontWeight.bold),
+
+                            // Compteur en overlay (bas du cercle)
+                            if (_timerDuration != _timeLeft)
+                              Align(
+                                alignment: Alignment.bottomCenter,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(bottom: 8.0),
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.6),
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 4),
+                                      child: Text(
+                                        '${_timeLeft ~/ 60}:${(_timeLeft % 60).toString().padLeft(2, '0')}',
+                                        style: TextStyle(
+                                          fontSize: timerFontSize,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white,
+                                          shadows: const [
+                                            Shadow(
+                                                blurRadius: 2,
+                                                color: Colors.black45,
+                                                offset: Offset(0, 1)),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

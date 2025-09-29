@@ -73,6 +73,10 @@
         "matchType": "Type de match",
         "swapPlayer": "Inverser les joueurs",
         "resetGame": "Reinitialiser la partie",
+        "timer": {
+            "pause": "Mettre en Pause",
+            "start": "Démarrer la partie"
+        },
         "die": {
             "dieType": "Type de dé",
             "rollDie": "Lancer le dé",

@@ -42,10 +42,12 @@ class _MatchScreenState extends State<MatchScreen>
   void initGame() {
     _winner = null;
     GamePlayer firstPlayer = GamePlayer(
+        index: 0,
         name: 'Joueur 1',
         color: _colorsToSelect[0],
         life: _matchType.lifeGamePlayer);
     GamePlayer secondPlayer = GamePlayer(
+        index: 1,
         name: 'Joueur 2',
         color: _colorsToSelect[1],
         life: _matchType.lifeGamePlayer);
@@ -133,6 +135,12 @@ class _MatchScreenState extends State<MatchScreen>
     });
   }
 
+  void _setPlayers(List<GamePlayer> players) {
+    setState(() {
+      _players = players;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -157,12 +165,12 @@ class _MatchScreenState extends State<MatchScreen>
               ),
             ],
           ),
-
           // Centered logo and action bar in a stacked layout
           BannerMatchWidget(
               reversePlayers: _reversePlayers,
               resetGame: _resetGame,
               players: _players,
+              setPlayers: _setPlayers,
               history: _history,
               matchType: _matchType,
               setMatchType: (MatchType value) => setState(() {
