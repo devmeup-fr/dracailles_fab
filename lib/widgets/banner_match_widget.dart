@@ -37,6 +37,7 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
   late int _timerDuration;
   late int _timeLeft;
   bool _timerStarted = false;
+  bool _timerPause = false;
 
   OverlayEntry? Entry;
   final GlobalKey _logoKey = GlobalKey();
@@ -454,15 +455,22 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                     }).toList(),
                     onChanged: (value) {
                       if (value != null) {
+                        int duration = MatchType.getDurationByType(value);
                         widget.setMatchType(MatchType(
                           type: value,
-                          durationGame: MatchType.getDurationByType(value),
+                          durationGame: duration,
                           lifeGamePlayer:
                               MatchType.getLifeGamePlayerByType(value),
                         ));
                         initGame();
                         widget.resetGame();
                         _timer?.cancel();
+                        setState(() {
+                          _timeLeft = duration;
+                          _timerDuration = duration;
+                          _timerStarted = false;
+                          _timerPause = false;
+                        });
                         Navigator.of(context).pop();
                       }
                     },
@@ -581,13 +589,7 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
     );
   }
 
-  void startTimer() {
-    _timeLeft = _timerDuration; // Reset timer to match duration
-    setState(() {
-      _timeLeft--; // Reset timer to match duration
-      _timerStarted = true; // Disable logo click
-    });
-
+  void runTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!_timerStarted) return;
 
@@ -601,10 +603,25 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
     });
   }
 
+  void startTimer() {
+    _timeLeft = _timerDuration;
+    setState(() {
+      _timeLeft--;
+      _timerStarted = true;
+      _timerPause = false;
+    });
+    runTimer();
+  }
+
   void toggleTimer() {
     setState(() {
-      _timerStarted = !_timerStarted;
+      _timerPause = !_timerPause;
     });
+    if (_timerPause) {
+      _timer?.cancel();
+    } else {
+      runTimer();
+    }
   }
 
   void _openRadialMenu() {
@@ -686,13 +703,16 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                         _timeLeft = widget.matchType.durationGame;
                         _timerDuration = widget.matchType.durationGame;
                         _timerStarted = false;
+                        _timerPause = false;
                       });
                     },
                   ),
                   // Timer: start/pause selon l’état
                   RadialAction(
-                    icon: _timerStarted ? Icons.pause : Icons.play_arrow,
-                    tooltip: _timerStarted
+                    icon: !_timerPause && _timerStarted
+                        ? Icons.pause
+                        : Icons.play_arrow,
+                    tooltip: !_timerPause
                         ? context.translate('game.timer.pause')
                         : context.translate('game.timer.start'),
                     onTap: () {
@@ -766,7 +786,9 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                             ),
 
                             // Compteur en overlay (bas du cercle)
-                            if (_timerDuration != _timeLeft)
+                            // Overlay compteur / pause
+                            if (_timerDuration != _timeLeft ||
+                                (_timerPause && _timerStarted))
                               Align(
                                 alignment: Alignment.bottomCenter,
                                 child: Padding(
@@ -779,19 +801,48 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                                     child: Padding(
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 10, vertical: 4),
-                                      child: Text(
-                                        '${_timeLeft ~/ 60}:${(_timeLeft % 60).toString().padLeft(2, '0')}',
-                                        style: TextStyle(
-                                          fontSize: timerFontSize,
-                                          fontWeight: FontWeight.w700,
-                                          color: Colors.white,
-                                          shadows: const [
-                                            Shadow(
-                                                blurRadius: 2,
-                                                color: Colors.black45,
-                                                offset: Offset(0, 1)),
-                                          ],
-                                        ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          // Affiche le compteur si temps écoulé
+                                          if (_timerDuration != _timeLeft)
+                                            Text(
+                                              '${_timeLeft ~/ 60}:${(_timeLeft % 60).toString().padLeft(2, '0')}',
+                                              style: TextStyle(
+                                                fontSize: timerFontSize,
+                                                fontWeight: FontWeight.w700,
+                                                color: Colors.white,
+                                                shadows: const [
+                                                  Shadow(
+                                                    blurRadius: 2,
+                                                    color: Colors.black45,
+                                                    offset: Offset(0, 1),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+
+                                          // Espace entre compteur et icône si les deux sont affichés
+                                          if (_timerDuration != _timeLeft &&
+                                              _timerPause &&
+                                              _timerStarted)
+                                            const SizedBox(width: 8),
+
+                                          // Affiche l’icône pause si conditions remplies
+                                          if (_timerPause && _timerStarted)
+                                            const Icon(
+                                              Icons.pause_circle_filled,
+                                              color: Colors.white,
+                                              size: 20,
+                                              shadows: [
+                                                Shadow(
+                                                  blurRadius: 2,
+                                                  color: Colors.black45,
+                                                  offset: Offset(0, 1),
+                                                ),
+                                              ],
+                                            ),
+                                        ],
                                       ),
                                     ),
                                   ),
