@@ -55,5 +55,6 @@ flutter_launcher_icons:
   image_path: 'assets/images/logo_dracailles_min.png'
   min_sdk_android: 24
   adaptive_icon_background: '#ffffff'
-  adaptive_icon_foreground_inset: 24
+  adaptive_icon_foreground: 'assets/images/logo_dracailles_min.png'
+  adaptive_icon_foreground_inset: 16
   adaptive_icon_monochrome: 'assets/images/logo_dracailles_monochrome.png'

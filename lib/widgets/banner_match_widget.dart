@@ -758,9 +758,9 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                             // Logo centré
                             Center(
                               child: Image.asset(
-                                'assets/images/logo_dracailles_min.png',
+                                'assets/images/logo_dracailles_full.png',
                                 height: circleDiameter *
-                                    (_timerDuration != _timeLeft ? 0.8 : 1),
+                                    (_timerDuration != _timeLeft ? 0.8 : 0.8),
                                 fit: BoxFit.contain,
                               ),
                             ),
