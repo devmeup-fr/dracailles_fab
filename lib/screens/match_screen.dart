@@ -311,11 +311,11 @@ class _MatchScreenState extends State<MatchScreen>
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.9),
+            color: Colors.white.withValues(alpha: 0.9),
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 spreadRadius: 5,
                 blurRadius: 10,
                 offset: const Offset(0, 3),
@@ -801,7 +801,7 @@ class _MatchScreenState extends State<MatchScreen>
                                   child: Icon(
                                     Icons.pause_circle_filled,
                                     size: 100,
-                                    color: Colors.white.withOpacity(0.8),
+                                    color: Colors.white.withValues(alpha: 0.8),
                                   ),
                                 ),
                             ],

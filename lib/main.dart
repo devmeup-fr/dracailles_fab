@@ -1,16 +1,15 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/blocs/locale_cubit.dart';
 import 'core/utils/localization_util.dart';
-import 'firebase_options.dart';
 import 'screens/home_screen.dart';
+import 'theme/colors.dart';
 import 'theme/themes.dart';
 
 // ignore: constant_identifier_names
@@ -20,17 +19,9 @@ const bool WITH_CLEAN_PREF = false;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  FirebaseFirestore.instance.settings = const Settings(
-    persistenceEnabled: false,
-    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
-  );
 
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-  ]);
+  setSystemUIMode();
+  requestPermissions();
 
   // CLEAN PREF USE
   if (WITH_CLEAN_PREF) {
@@ -41,11 +32,33 @@ void main() async {
     DeviceOrientation.portraitUp,
   ]);
 
+  final Locale initialLocale = await getStoredLocale();
+
   runApp(
     MultiBlocProvider(providers: [
-      BlocProvider(create: (_) => LocaleCubit()),
+      BlocProvider(create: (_) => LocaleCubit(initialLocale)),
     ], child: const MyApp()),
   );
+}
+
+void setSystemUIMode() {
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
+    systemNavigationBarColor: ThemeColors.primary,
+    systemNavigationBarDividerColor: ThemeColors.primary,
+    systemNavigationBarIconBrightness: Brightness.light,
+  ));
+}
+
+Future<void> requestPermissions() async {
+  await [
+    Permission.storage,
+    Permission.notification,
+    Permission.scheduleExactAlarm,
+  ].request();
 }
 
 Future<void> handlerCleanPref() async {
