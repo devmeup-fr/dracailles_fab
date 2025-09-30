@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/blocs/locale_cubit.dart';
@@ -54,11 +53,9 @@ void setSystemUIMode() {
 }
 
 Future<void> requestPermissions() async {
-  await [
-    Permission.storage,
-    Permission.notification,
-    Permission.scheduleExactAlarm,
-  ].request();
+  // await [
+  //  Permission.storage,
+  // ].request();
 }
 
 Future<void> handlerCleanPref() async {
