@@ -43,12 +43,12 @@ class _MatchScreenState extends State<MatchScreen>
     _winner = null;
     GamePlayer firstPlayer = GamePlayer(
         index: 0,
-        name: 'Joueur 1',
+        name: '',
         color: _colorsToSelect[0],
         life: _matchType.lifeGamePlayer);
     GamePlayer secondPlayer = GamePlayer(
         index: 1,
-        name: 'Joueur 2',
+        name: '',
         color: _colorsToSelect[1],
         life: _matchType.lifeGamePlayer);
     _players = [

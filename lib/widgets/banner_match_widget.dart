@@ -401,113 +401,109 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
       context: context,
       builder: (context) {
         return StatefulBuilder(builder: (context, setModalState) {
-          return Dialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            insetPadding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.settings, color: Colors.black54),
-                      const SizedBox(width: 10),
-                      Text(
-                        context.translate('game.settings'),
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Divider(height: 25),
-
-                  // Type de match
-                  Text(
-                    context.translate('game.matchType'),
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<MatchTypeEnum>(
-                    initialValue: widget.matchType.type,
-                    dropdownColor: Colors.white,
-                    focusColor: Colors.white,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.grey[100],
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 12),
-                    ),
-                    items: MatchTypeEnum.values.map((matchType) {
-                      return DropdownMenuItem(
-                        value: matchType,
-                        child: Text(matchType.displayName),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      if (value != null) {
-                        int duration = MatchType.getDurationByType(value);
-                        widget.setMatchType(MatchType(
-                          type: value,
-                          durationGame: duration,
-                          lifeGamePlayer:
-                              MatchType.getLifeGamePlayerByType(value),
-                        ));
-                        initGame();
-                        widget.resetGame();
-                        _timer?.cancel();
-                        setState(() {
-                          _timeLeft = duration;
-                          _timerDuration = duration;
-                          _timerStarted = false;
-                          _timerPause = false;
-                        });
-                        Navigator.of(context).pop();
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Joueur 1
-                  Text(
-                    "${context.translate('player.entityName')} 1",
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 8),
-                  _buildPlayerTile(widget.players[0], 1, setModalState),
-                  const SizedBox(height: 16),
-
-                  // Joueur 2
-                  Text(
-                    "${context.translate('player.entityName')} 2",
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 8),
-                  _buildPlayerTile(widget.players[1], 2, setModalState),
-
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: Text(context.translate('common.cancel')),
-                      ),
-                    ],
-                  )
-                ],
+          return AlertDialog(
+              scrollable: true,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
               ),
-            ),
-          );
+              insetPadding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.settings, color: Colors.black54),
+                        const SizedBox(width: 10),
+                        Text(
+                          context.translate('game.settings'),
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Divider(
+                      height: 25,
+                      color: ThemeColors.primary,
+                    ),
+
+                    // Type de match
+                    Text(
+                      context.translate('game.matchType'),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<MatchTypeEnum>(
+                      initialValue: widget.matchType.type,
+                      dropdownColor: Colors.white,
+                      focusColor: Colors.white,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.grey[100],
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding:
+                            const EdgeInsets.symmetric(horizontal: 12),
+                      ),
+                      items: MatchTypeEnum.values.map((matchType) {
+                        return DropdownMenuItem(
+                          value: matchType,
+                          child: Text(matchType.displayName),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          int duration = MatchType.getDurationByType(value);
+                          widget.setMatchType(MatchType(
+                            type: value,
+                            durationGame: duration,
+                            lifeGamePlayer:
+                                MatchType.getLifeGamePlayerByType(value),
+                          ));
+                          initGame();
+                          widget.resetGame();
+                          _timer?.cancel();
+                          setState(() {
+                            _timeLeft = duration;
+                            _timerDuration = duration;
+                            _timerStarted = false;
+                            _timerPause = false;
+                          });
+                          Navigator.of(context).pop();
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Joueur 1
+                    Text(
+                      "${context.translate('player.entityName')} 1",
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildPlayerTile(widget.players[0], 0, setModalState),
+                    const SizedBox(height: 16),
+                    // Joueur 2
+                    Text(
+                      "${context.translate('player.entityName')} 2",
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildPlayerTile(widget.players[1], 1, setModalState),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: Text(context.translate('common.cancel')),
+                        ),
+                      ],
+                    )
+                  ]));
         });
       },
     );
@@ -544,14 +540,22 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
   }
 
   void _selectOrCreatePlayer(
-      int playerNumber, void Function(void Function()) parentSetModalState) {
-    String tempName = widget.players[playerNumber - 1].name;
+      int playerIndex, void Function(void Function()) parentSetModalState) {
+    int indexOfPlayerByIndex(List<GamePlayer> players, int wantedIndex) =>
+        players.indexWhere((p) => p.index == wantedIndex);
+
+    final idx = indexOfPlayerByIndex(widget.players, playerIndex);
+    if (idx == -1) {
+      return;
+    }
+    String tempName = widget.players[idx].name;
 
     showDialog(
       context: context,
       builder: (context) {
         return StatefulBuilder(builder: (context, setModalState) {
           return AlertDialog(
+            scrollable: true,
             title: Text(context.translate("player.selectPlayer")),
             content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -574,9 +578,16 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
               ),
               ElevatedButton(
                 onPressed: () {
-                  setState(() {
-                    widget.players[playerNumber - 1].name = tempName;
-                  });
+                  List<GamePlayer> updatePlayers = widget.players;
+                  int indexOfPlayerByIndex(
+                          List<GamePlayer> players, int wantedIndex) =>
+                      players.indexWhere((p) => p.index == wantedIndex);
+
+                  final idx = indexOfPlayerByIndex(updatePlayers, playerIndex);
+                  if (idx != -1) {
+                    updatePlayers[idx].name = tempName;
+                  }
+                  widget.setPlayers(updatePlayers);
                   parentSetModalState(() {});
                   Navigator.of(context).pop();
                 },
