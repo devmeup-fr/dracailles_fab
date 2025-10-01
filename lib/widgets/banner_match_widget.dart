@@ -5,6 +5,7 @@ import 'package:fab_dracailles/models/game_player_model.dart';
 import 'package:fab_dracailles/models/match_type_model.dart';
 import 'package:fab_dracailles/screens/match_screen.dart';
 import 'package:fab_dracailles/theme/colors.dart';
+import 'package:fab_dracailles/widgets/devmeup_widget.dart';
 import 'package:fab_dracailles/widgets/radial_menu_widget.dart';
 import 'package:flutter/material.dart';
 
@@ -649,96 +650,118 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
 
     Entry = OverlayEntry(
       builder: (ctx) {
-        return Stack(
-          children: [
-            Positioned.fill(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: _closeRadialMenu,
-                child: Container(color: Colors.black.withOpacity(0.35)),
+        final insets = MediaQuery.of(ctx).viewInsets.bottom;
+        return Material(
+          type: MaterialType.transparency,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _closeRadialMenu,
+                  child: Container(color: Colors.black.withOpacity(0.35)),
+                ),
               ),
-            ),
-            Positioned.fill(
-              child: RadialMenu(
-                center: center,
-                radius: 100,
-                items: [
-                  RadialAction(
-                    icon: Icons.settings,
-                    tooltip: context.translate('game.matchType'),
-                    onTap: () {
-                      _closeRadialMenu();
-                      showSettings();
-                    },
-                  ),
-                  RadialAction(
-                    icon: Icons.history,
-                    tooltip: context.translate('game.history'),
-                    onTap: () {
-                      _closeRadialMenu();
-                      showHistory();
-                    },
-                  ),
-                  RadialAction(
-                    icon: Icons.casino,
-                    tooltip: context.translate('game.die.rollDie'),
-                    onTap: () {
-                      _closeRadialMenu();
-                      _rollDie();
-                    },
-                  ),
-                  RadialAction(
-                    icon: Icons.color_lens,
-                    tooltip: context.translate('player.changeColorPlayers'),
-                    onTap: () {
-                      _closeRadialMenu();
-                      changePlayersColor();
-                    },
-                  ),
-                  RadialAction(
-                    icon: Icons.swap_horiz,
-                    tooltip: context.translate('game.swapPlayer'),
-                    onTap: () {
-                      _closeRadialMenu();
-                      widget.reversePlayers();
-                    },
-                  ),
-                  RadialAction(
-                    icon: Icons.refresh,
-                    tooltip: context.translate('game.resetGame'),
-                    onTap: () {
-                      _closeRadialMenu();
-                      widget.resetGame();
-                      _timer?.cancel();
-                      setState(() {
-                        _timeLeft = widget.matchType.durationGame;
-                        _timerDuration = widget.matchType.durationGame;
-                        _timerStarted = false;
-                        _timerPause = false;
-                      });
-                    },
-                  ),
-                  // Timer: start/pause selon l’état
-                  RadialAction(
-                    icon: !_timerPause && _timerStarted
-                        ? Icons.pause
-                        : Icons.play_arrow,
-                    tooltip: !_timerPause
-                        ? context.translate('game.timer.pause')
-                        : context.translate('game.timer.start'),
-                    onTap: () {
-                      _closeRadialMenu();
-                      if (_timerStarted) {
-                        toggleTimer();
-                      } else {
-                        startTimer();
-                      }
-                    },
-                  ),
-                ],
+              Positioned.fill(
+                child: RadialMenu(
+                  center: center,
+                  radius: 100,
+                  items: [
+                    RadialAction(
+                      icon: Icons.settings,
+                      tooltip: context.translate('game.matchType'),
+                      onTap: () {
+                        _closeRadialMenu();
+                        showSettings();
+                      },
+                    ),
+                    RadialAction(
+                      icon: Icons.history,
+                      tooltip: context.translate('game.history'),
+                      onTap: () {
+                        _closeRadialMenu();
+                        showHistory();
+                      },
+                    ),
+                    RadialAction(
+                      icon: Icons.casino,
+                      tooltip: context.translate('game.die.rollDie'),
+                      onTap: () {
+                        _closeRadialMenu();
+                        _rollDie();
+                      },
+                    ),
+                    RadialAction(
+                      icon: Icons.color_lens,
+                      tooltip: context.translate('player.changeColorPlayers'),
+                      onTap: () {
+                        _closeRadialMenu();
+                        changePlayersColor();
+                      },
+                    ),
+                    RadialAction(
+                      icon: Icons.swap_horiz,
+                      tooltip: context.translate('game.swapPlayer'),
+                      onTap: () {
+                        _closeRadialMenu();
+                        widget.reversePlayers();
+                      },
+                    ),
+                    RadialAction(
+                      icon: Icons.refresh,
+                      tooltip: context.translate('game.resetGame'),
+                      onTap: () {
+                        _closeRadialMenu();
+                        widget.resetGame();
+                        _timer?.cancel();
+                        setState(() {
+                          _timeLeft = widget.matchType.durationGame;
+                          _timerDuration = widget.matchType.durationGame;
+                          _timerStarted = false;
+                          _timerPause = false;
+                        });
+                      },
+                    ),
+                    // Timer: start/pause selon l’état
+                    RadialAction(
+                      icon: !_timerPause && _timerStarted
+                          ? Icons.pause
+                          : Icons.play_arrow,
+                      tooltip: !_timerPause
+                          ? context.translate('game.timer.pause')
+                          : context.translate('game.timer.start'),
+                      onTap: () {
+                        _closeRadialMenu();
+                        if (_timerStarted) {
+                          toggleTimer();
+                        } else {
+                          startTimer();
+                        }
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 8.0 + insets,
+                child: SafeArea(
+                  top: false,
+                  left: false,
+                  right: false,
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        maxWidth: 600,
+                      ),
+                      child: const DevMeUpWidget(),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
