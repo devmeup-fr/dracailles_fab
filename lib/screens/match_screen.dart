@@ -1,4 +1,3 @@
-import 'package:fab_dracailles/core/utils/localization_util.dart';
 import 'package:fab_dracailles/models/match_type_model.dart';
 import 'package:fab_dracailles/theme/colors.dart';
 import 'package:fab_dracailles/widgets/banner_match_widget.dart';
@@ -86,31 +85,9 @@ class _MatchScreenState extends State<MatchScreen>
   void _checkGameOver() {
     if (_players[0].life <= 0) {
       _winner = _players[1]; // Player 2 wins
-      _showWinnerDialog();
     } else if (_players[1].life <= 0) {
       _winner = _players[0]; // Player 1 wins
-      _showWinnerDialog();
     }
-  }
-
-  // Show winner dialog when game is over
-  void _showWinnerDialog() {
-    if (_winner == null) return;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(context.translate('game.winner')),
-        content:
-            Text('$context.translate("game.congratulations") ${_winner!.name}'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(context.translate('common.ok')),
-          ),
-        ],
-      ),
-    );
   }
 
   void _resetGame() {
