@@ -2,6 +2,7 @@ import 'package:fab_dracailles/models/match_type_model.dart';
 import 'package:fab_dracailles/theme/colors.dart';
 import 'package:fab_dracailles/widgets/banner_match_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../models/game_player_model.dart';
 import '../widgets/life_tracker_widget.dart';
@@ -24,7 +25,7 @@ class MatchScreen extends StatefulWidget {
 }
 
 class _MatchScreenState extends State<MatchScreen>
-    with AutomaticKeepAliveClientMixin {
+    with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
   @override
   bool get wantKeepAlive => true;
 
@@ -65,11 +66,32 @@ class _MatchScreenState extends State<MatchScreen>
     super.initState();
     _matchType = MatchType.initMatch();
     initGame();
+    WidgetsBinding.instance.addObserver(this);
+    _enableWakelockIfNeeded();
   }
 
   @override
-  dispose() {
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _enableWakelockIfNeeded();
+    } else {
+      _disableWakelock();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _disableWakelock();
     super.dispose();
+  }
+
+  Future<void> _enableWakelockIfNeeded() async {
+    if (_winner == null) await WakelockPlus.enable();
+  }
+
+  Future<void> _disableWakelock() async {
+    await WakelockPlus.disable();
   }
 
   void addToHistory(GamePlayer player) {
@@ -88,6 +110,7 @@ class _MatchScreenState extends State<MatchScreen>
     } else if (_players[1].life <= 0) {
       _winner = _players[0]; // Player 1 wins
     }
+    _disableWakelock();
   }
 
   void _resetGame() {
@@ -102,6 +125,7 @@ class _MatchScreenState extends State<MatchScreen>
         HistoryEntry(lifePoints: _matchType.lifeGamePlayer, player: _players[1])
       ];
     });
+    _enableWakelockIfNeeded();
   }
 
   void _reversePlayers() {
