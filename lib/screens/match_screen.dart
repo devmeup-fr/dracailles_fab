@@ -107,10 +107,11 @@ class _MatchScreenState extends State<MatchScreen>
   void _checkGameOver() {
     if (_players[0].life <= 0) {
       _winner = _players[1]; // Player 2 wins
+      _disableWakelock();
     } else if (_players[1].life <= 0) {
       _winner = _players[0]; // Player 1 wins
+      _disableWakelock();
     }
-    _disableWakelock();
   }
 
   void _resetGame() {

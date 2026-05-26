@@ -1,8 +1,8 @@
 enum MatchTypeEnum {
+  classicConstructed,
+  sage,
   draft,
-  sealed,
-  blitz,
-  classicConstructed;
+  sealed;
 
   String get displayName {
     switch (this) {
@@ -10,8 +10,8 @@ enum MatchTypeEnum {
         return "Draft";
       case MatchTypeEnum.sealed:
         return "Sealed";
-      case MatchTypeEnum.blitz:
-        return "Blitz";
+      case MatchTypeEnum.sage:
+        return "SAGE";
       case MatchTypeEnum.classicConstructed:
         return "Classic Constructed";
     }
@@ -46,7 +46,7 @@ class MatchType {
   }
 
   static int getDurationByType(MatchTypeEnum type) {
-    return type == MatchTypeEnum.classicConstructed ? 50 * 60 : 30 * 60;
+    return type == MatchTypeEnum.classicConstructed ? 55 * 60 : 35 * 60;
   }
 
   static int getLifeGamePlayerByType(MatchTypeEnum type) {
