@@ -659,7 +659,7 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: _closeRadialMenu,
-                  child: Container(color: Colors.black.withOpacity(0.35)),
+                  child: Container(color: Colors.black.withValues(alpha: 0.35)),
                 ),
               ),
               Positioned.fill(
@@ -813,8 +813,7 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                             Center(
                               child: Image.asset(
                                 'assets/images/logo_dracailles_full.png',
-                                height: circleDiameter *
-                                    (_timerDuration != _timeLeft ? 0.8 : 0.8),
+                                height: circleDiameter * 0.9,
                                 fit: BoxFit.contain,
                               ),
                             ),
@@ -829,7 +828,8 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                                   padding: const EdgeInsets.only(bottom: 8.0),
                                   child: DecoratedBox(
                                     decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.6),
+                                      color:
+                                          Colors.black.withValues(alpha: 0.6),
                                       borderRadius: BorderRadius.circular(14),
                                     ),
                                     child: Padding(
