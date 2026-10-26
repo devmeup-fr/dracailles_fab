@@ -29,15 +29,32 @@ class ThemeColors {
   static const backgroundColor = Color.fromRGBO(241, 241, 241, 1);
   static const tabBackgroundColor = Color.fromRGBO(253, 233, 205, 1);
 
+  // Spread around the hue wheel, each kept dark enough (relative luminance
+  // <= 0.30) that the white player name overlaid on it stays readable.
   static const colorsPlayerGame = [
-    Color.fromRGBO(95, 46, 46, 1),
-    Color.fromRGBO(104, 153, 255, 1),
-    Color.fromRGBO(218, 74, 74, 1),
-    Color.fromRGBO(230, 136, 10, 1),
-    Color.fromRGBO(255, 165, 0, 1),
-    Color.fromRGBO(153, 104, 255, 1),
-    Color.fromRGBO(255, 204, 153, 1),
-    Color.fromRGBO(153, 255, 204, 1),
-    Color.fromRGBO(255, 153, 153, 1),
+    Color.fromRGBO(191, 61, 61, 1),
+    Color.fromRGBO(191, 94, 61, 1),
+    Color.fromRGBO(191, 126, 61, 1),
+    Color.fromRGBO(168, 140, 54, 1),
+    Color.fromRGBO(153, 153, 49, 1),
+    Color.fromRGBO(127, 153, 49, 1),
+    Color.fromRGBO(106, 161, 51, 1),
+    Color.fromRGBO(79, 161, 51, 1),
+    Color.fromRGBO(54, 168, 54, 1),
+    Color.fromRGBO(54, 168, 82, 1),
+    Color.fromRGBO(54, 168, 111, 1),
+    Color.fromRGBO(51, 161, 133, 1),
+    Color.fromRGBO(51, 161, 161, 1),
+    Color.fromRGBO(61, 159, 191, 1),
+    Color.fromRGBO(61, 126, 191, 1),
+    Color.fromRGBO(61, 94, 191, 1),
+    Color.fromRGBO(61, 61, 191, 1),
+    Color.fromRGBO(94, 61, 191, 1),
+    Color.fromRGBO(126, 61, 191, 1),
+    Color.fromRGBO(159, 61, 191, 1),
+    Color.fromRGBO(191, 61, 191, 1),
+    Color.fromRGBO(191, 61, 159, 1),
+    Color.fromRGBO(191, 61, 126, 1),
+    Color.fromRGBO(191, 61, 94, 1),
   ];
 }

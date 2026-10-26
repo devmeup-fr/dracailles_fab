@@ -86,7 +86,20 @@ class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
             ? Matrix4.rotationZ(3.14159) // 180° rotation
             : Matrix4.identity(),
         child: Container(
-          color: widget.gamePlayer.color,
+          // The player color is always the base paint: if a hero is picked
+          // but its image file hasn't been dropped in assets/images/heros/
+          // yet, the image silently fails to draw and the color shows
+          // through instead of a broken-asset error.
+          decoration: BoxDecoration(
+            color: widget.gamePlayer.color,
+            image: widget.gamePlayer.hero == null
+                ? null
+                : DecorationImage(
+                    image: AssetImage(widget.gamePlayer.hero!.photoPath),
+                    fit: BoxFit.cover,
+                    onError: (exception, stackTrace) {},
+                  ),
+          ),
           child: Stack(
             children: [
               if (_temporaryLifeChange != 0)
@@ -107,8 +120,9 @@ class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    if (widget.gamePlayer.hero != null)
                     Text(
-                      widget.gamePlayer.name,
+                      widget.gamePlayer.hero!.name,
                       style: const TextStyle(
                         fontSize: 24,
                         color: Colors.white,

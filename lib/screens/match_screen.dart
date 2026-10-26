@@ -1,3 +1,4 @@
+import 'package:fab_dracailles/core/utils/player_color_prefs.dart';
 import 'package:fab_dracailles/models/match_type_model.dart';
 import 'package:fab_dracailles/theme/colors.dart';
 import 'package:fab_dracailles/widgets/banner_match_widget.dart';
@@ -43,12 +44,10 @@ class _MatchScreenState extends State<MatchScreen>
     _winner = null;
     GamePlayer firstPlayer = GamePlayer(
         index: 0,
-        name: '',
         color: _colorsToSelect[0],
         life: _matchType.lifeGamePlayer);
     GamePlayer secondPlayer = GamePlayer(
         index: 1,
-        name: '',
         color: _colorsToSelect[1],
         life: _matchType.lifeGamePlayer);
     _players = [
@@ -68,6 +67,27 @@ class _MatchScreenState extends State<MatchScreen>
     initGame();
     WidgetsBinding.instance.addObserver(this);
     _enableWakelockIfNeeded();
+    _loadSavedAppearance();
+  }
+
+  /// Restores the color/hero players picked last time, so they don't have
+  /// to re-select them at the start of every game.
+  Future<void> _loadSavedAppearance() async {
+    final savedColors = await Future.wait(
+      [getPlayerColor(0), getPlayerColor(1)],
+    );
+    final savedHeroes = await Future.wait(
+      [getPlayerHero(0), getPlayerHero(1)],
+    );
+    if (!mounted) return;
+    setState(() {
+      for (var i = 0; i < _players.length; i++) {
+        final color = savedColors[i];
+        if (color != null) _players[i].color = color;
+        final hero = savedHeroes[i];
+        if (hero != null) _players[i].hero = hero;
+      }
+    });
   }
 
   @override
