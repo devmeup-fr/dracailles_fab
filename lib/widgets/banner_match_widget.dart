@@ -333,9 +333,12 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
 
           Widget heroPicker() {
             final heroes = showYoung ? fabHeroesYoung : fabHeroesAdult;
-            final byClass = <String, List<FabHero>>{};
+            final byClass = <FabHeroClass, List<FabHero>>{};
             for (final hero in heroes) {
-              byClass.putIfAbsent(hero.heroClass, () => []).add(hero);
+              // Multi-class heroes show up under each of their classes.
+              for (final heroClass in hero.heroClasses) {
+                byClass.putIfAbsent(heroClass, () => []).add(hero);
+              }
             }
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -368,7 +371,7 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(entry.key,
+                            Text(entry.key.displayName,
                                 style: const TextStyle(
                                     fontWeight: FontWeight.w600)),
                             const SizedBox(height: 12),
