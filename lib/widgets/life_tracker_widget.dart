@@ -120,16 +120,6 @@ class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    if (widget.gamePlayer.hero != null)
-                    Text(
-                      widget.gamePlayer.hero!.name,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [

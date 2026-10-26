@@ -209,7 +209,8 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                   ),
                   ElevatedButton(
                     onPressed: () {
-                      selectPlayerAppearance(player.index);
+                      selectPlayerAppearance(player.index,
+                          onApplied: changePlayersColor);
                     },
                     child: Text(context.translate("player.changeColor")),
                   ),
@@ -248,7 +249,12 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
     });
   }
 
-  void selectPlayerAppearance(int playerIndex) {
+  /// Opens the color/hero picker for [playerIndex]. [onApplied] runs after
+  /// a pick closes the picker - pass [changePlayersColor] to reopen that
+  /// list (when entering from there), or leave it null when the caller
+  /// (e.g. the Settings dialog) already rebuilds itself on its own, so we
+  /// don't stack an extra, unrelated dialog on top of it.
+  void selectPlayerAppearance(int playerIndex, {VoidCallback? onApplied}) {
     int indexOfPlayerByIndex(List<GamePlayer> players, int wantedIndex) =>
         players.indexWhere((p) => p.index == wantedIndex);
 
@@ -277,7 +283,7 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                       await savePlayerHero(playerIndex, null);
                       if (!context.mounted) return;
                       Navigator.of(context).pop();
-                      changePlayersColor();
+                      onApplied?.call();
                     },
                     child: CircleAvatar(radius: 28, backgroundColor: color),
                   );
@@ -306,7 +312,7 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                   await savePlayerHero(playerIndex, hero);
                   if (!context.mounted) return;
                   Navigator.of(context).pop();
-                  changePlayersColor();
+                  onApplied?.call();
                 },
                 child: SizedBox(
                   width: 72,
@@ -671,7 +677,8 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
   Widget _buildPlayerTile(GamePlayer player, int index,
       void Function(void Function()) setModalState) {
     return GestureDetector(
-      onTap: () => selectPlayerAppearance(index),
+      onTap: () => selectPlayerAppearance(index,
+          onApplied: () => setModalState(() {})),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         decoration: BoxDecoration(
