@@ -259,7 +259,7 @@ const List<FabHero> fabHeroesYoung = [
   FabHero('Puffin', [FabHeroClass.mechanologist], 'puffin.webp', 20),
   FabHero('Rhinar', [FabHeroClass.brute], 'rhinar.webp', 20),
   FabHero('Riptide', [FabHeroClass.ranger], 'riptide.webp', 19),
-  FabHero('Scurv Stowaway', [FabHeroClass.thief], 'scurv-stowaway.png', 20),
+  FabHero('Scurv Stowaway', [FabHeroClass.thief], 'scurv-stowaway.webp', 20),
   FabHero('Teklovossen', [FabHeroClass.mechanologist], 'teklovossen.webp', 20),
   FabHero('Terra', [FabHeroClass.guardian], 'terra.webp', 20),
   FabHero('Tuffnut', [FabHeroClass.brute], 'tuffnut.webp', 20),
