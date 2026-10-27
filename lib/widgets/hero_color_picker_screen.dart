@@ -134,6 +134,16 @@ class _HeroColorPickerScreenState extends State<HeroColorPickerScreen>
                 setState(() => _showYoung = selection.first),
           ),
         ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+          child: Text(
+            'Flesh and Blood™ is a registered trademark of Legend Story '
+            'Studios. Flesh and Blood™ and all associated images are '
+            'copyright © Legend Story Studios. All rights reserved.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 9, color: Colors.grey[600]),
+          ),
+        ),
         Expanded(
           child: byClass.isEmpty
               ? Center(
