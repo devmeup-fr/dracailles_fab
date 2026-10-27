@@ -8,24 +8,25 @@
 /// player's color.
 ///
 /// Classes and life totals are best-effort and editable here directly.
+// Declaration order doubles as the display order in the hero picker
+// (lib/widgets/hero_color_picker_screen.dart), so reordering these also
+// reorders the UI. Display text comes from the `heroClass.<name>` keys in
+// assets/i18n/*.json, not from the enum itself.
 enum FabHeroClass {
-  assassin('Assassin'),
-  bard('Bard'),
-  brute('Brute'),
-  guardian('Guardian'),
-  illusionist('Illusionist'),
-  mechanologist('Mechanologist'),
-  merchant('Merchant'),
-  ninja('Ninja'),
-  ranger('Ranger'),
-  runeblade('Runeblade'),
-  thief('Thief'),
-  warrior('Warrior'),
-  wizard('Wizard'),
-  unknown('Unknown');
-
-  final String displayName;
-  const FabHeroClass(this.displayName);
+  assassin,
+  brute,
+  guardian,
+  illusionist,
+  mechanologist,
+  ninja,
+  ranger,
+  runeblade,
+  warrior,
+  wizard,
+  thief,
+  bard,
+  merchant,
+  none,
 }
 
 class FabHero {
@@ -38,7 +39,129 @@ class FabHero {
 
   String get thumbnailPath => 'assets/images/hero_thumbnails/$asset';
   String get photoPath => 'assets/images/hero_photos/$asset';
+
+  /// Whether this hero's photo uses the full-art template (art bleeds to
+  /// all four edges, only a small name plate at the very bottom) rather
+  /// than the bordered template (title bar with the printed name near the
+  /// top, art in the middle, rules-text box below). See
+  /// [fabHeroesBorderedAssets] for how this is determined.
+  bool get isFullArt => !fabHeroesBorderedAssets.contains(asset);
 }
+
+/// Asset filenames (the `FabHero.asset` value, e.g. `'terra.webp'`) of hero
+/// photos under `assets/images/hero_photos/` that use the bordered card
+/// template - a title bar with the hero's printed name near the top of the
+/// image - rather than the full-art template, where the artwork bleeds to
+/// all four edges and only a small name plate sits at the bottom.
+///
+/// Classified by eye against every file in that folder (144 as of writing):
+/// bordered templates show a distinct title bar/ribbon above the art,
+/// full-art ones don't. Used by [FabHero.isFullArt] and by [HeroArtCrop]
+/// call sites that need to crop the top title bar out of bordered photos
+/// without also cropping into a full-art hero's head.
+const Set<String> fabHeroesBorderedAssets = {
+  'a-01-first-cogwarden.webp',
+  'arakni-5lp3d-7hru-7h3-cr4x.webp',
+  'arakni-marionette.webp',
+  'arakni-web-of-deceit.webp',
+  'aurora-emissary-of-lightning.webp',
+  'aurora-legacy-of-tempest.webp',
+  'azalea-ace-in-the-hole.webp',
+  'azalea-ace-of-spades.webp',
+  'azalea-lone-vigilante.webp',
+  'azalea.webp',
+  'baalghor-omen-of-the-end.webp',
+  'benji-the-piercing-wind.webp',
+  'blaze-firemind.webp',
+  'boltyn.webp',
+  'bravo-flattering-showman.webp',
+  'bravo-showstopper.webp',
+  'chane-bound-by-shadow.webp',
+  'chane.webp',
+  'dash-database.webp',
+  'dash-inventor-extraordinaire.webp',
+  'dash-io.webp',
+  'dash.webp',
+  'data-doll-mkii.webp',
+  'dorinthea-ironsong.webp',
+  'dorinthea-quicksilver-prodigy.webp',
+  'dorinthea.webp',
+  'dr-mortimer-blight-of-the-pits.webp',
+  'dr-mortimer.webp',
+  'dromai-ash-artist.webp',
+  'dromai.webp',
+  'fai-rising-rebellion.webp',
+  'fai.webp',
+  'florian-rotwood-harbinger.webp',
+  'frankie-make-ends-meat.webp',
+  'gravy-bones-shipwrecked-looter.webp',
+  'gravy-bones.webp',
+  'hala-bladesaint-of-the-vow.webp',
+  'hala.webp',
+  'huxley-racketeer.webp',
+  'huxley.webp',
+  'ira-crimson-haze.webp',
+  'iyslander-stormbind.webp',
+  'kano-dracai-of-aether.webp',
+  'kano.webp',
+  'kassai-cintari-sellsword.webp',
+  'katsu-the-wanderer.webp',
+  'katsu.webp',
+  'kavdaen-trader-of-skins.webp',
+  'kayo-berserker-runt.webp',
+  'kayo-strong-arm.webp',
+  'kayo-underhanded-cheat.webp',
+  'killjoy-the-crooked-blade.webp',
+  'levia-shadowborn-abomination.webp',
+  'levia.webp',
+  'lexi-livewire.webp',
+  'lexi.webp',
+  'lyath-goldmane-vile-savant.webp',
+  'lyath-goldmane.webp',
+  'malice-domina-of-the-dead.webp',
+  'malice.webp',
+  'marlynn-treasure-hunter.webp',
+  'marlynn.webp',
+  'maxx-nitro.webp',
+  'min-genius.webp',
+  'min-half-genius.webp',
+  'mortimer-living-virus.webp',
+  'oldhim-grandfather-of-eternity.webp',
+  'oldhim.webp',
+  'olympia-prized-fighter.webp',
+  'oscilio-forked-continuum.webp',
+  'oscilio-scion-of-the-third-age.webp',
+  'pleiades-superstar.webp',
+  'pleiades.webp',
+  'prism-advent-of-thrones.webp',
+  'prism-awakener-of-sol.webp',
+  'prism-sculptor-of-arc-light.webp',
+  'prism.webp',
+  'puffin-hightail.webp',
+  'puffin.webp',
+  'rhinar-reckless-rampage.webp',
+  'rhinar.webp',
+  'riptide.webp',
+  'scurv-stowaway.webp',
+  'ser-boltyn-breaker-of-dawn.webp',
+  'teklovossen-esteemed-magnate.webp',
+  'teklovossen.webp',
+  'terra.webp',
+  'tuffnut-bumbling-hulkster.webp',
+  'tuffnut.webp',
+  'uzuri.webp',
+  'viserai-between-worlds.webp',
+  'viserai-rune-blood.webp',
+  'viserai-the-forsaken.webp',
+  'viserai.webp',
+  'vyle-catalyst-of-collapse.webp',
+  'vyle.webp',
+  'vynnset-iron-maiden.webp',
+  'vynnset.webp',
+  'zane-broadly-beloved.webp',
+  'zyggy-starlight.webp',
+  'zyggy.webp',
+};
 
 const List<FabHero> fabHeroesAdult = [
   FabHero('Arakni 5lp3d 7hru 7h3 Cr4x', [FabHeroClass.assassin],
@@ -186,7 +309,7 @@ const List<FabHero> fabHeroesYoung = [
   FabHero('Azalea Lone Vigilante', [FabHeroClass.ranger],
       'azalea-lone-vigilante.webp', 19),
   FabHero('Azalea', [FabHeroClass.ranger], 'azalea.webp', 20),
-  FabHero('Baalghor Omen of the End', [FabHeroClass.unknown],
+  FabHero('Baalghor Omen of the End', [FabHeroClass.none],
       'baalghor-omen-of-the-end.webp', 33),
   FabHero('Benji the Piercing Wind', [FabHeroClass.ninja],
       'benji-the-piercing-wind.webp', 17),

@@ -21,6 +21,14 @@ class LifeTrackerWidget extends StatefulWidget {
 }
 
 class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
+  /// How much of a bordered hero photo's top to crop away so the title
+  /// bar's printed name doesn't show. Eyeballed against several bordered
+  /// photos: the title ribbon (frame + text) consistently ends by ~10-13%
+  /// of the image height, well above where a character's head starts, so
+  /// 0.12 clears the name with a little margin to spare. Full-art photos
+  /// keep the `HeroArtCrop` default of 0 instead (see its doc comment).
+  static const double _borderedTopCrop = 0.12;
+
   Timer? _longPressTimer;
   int _temporaryLifeChange = 0;
   Timer? _temporaryLifeTimer;
@@ -98,6 +106,9 @@ class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
                 Positioned.fill(
                   child: HeroArtCrop(
                     assetPath: widget.gamePlayer.hero!.photoPath,
+                    top: widget.gamePlayer.hero!.isFullArt
+                        ? 0.0
+                        : _borderedTopCrop,
                   ),
                 ),
               if (_temporaryLifeChange != 0)

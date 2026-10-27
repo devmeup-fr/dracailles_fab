@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
 class ThemeColors {
-  static const primary = Color.fromRGBO(16, 57, 92, 1); // #10395c
-  static const primaryLight = Color.fromRGBO(16, 57, 92, 0.1); // #10395c
-  static const secondary = Color.fromRGBO(243, 146, 9, 1); // #f39209
+  // Sampled from the app logo (assets/images/logo_dracailles_full_512.png):
+  // the dragon's wings/roses red as primary, its body's light brown/gold as
+  // secondary, so the menu reads as on-brand instead of an unrelated navy.
+  static const primary = Color.fromRGBO(125, 32, 41, 1); // #7d2029
+  static const primaryLight = Color.fromRGBO(125, 32, 41, 0.1); // #7d2029
+  static const secondary = Color.fromRGBO(179, 135, 91, 1); // #b3875b
   static const tertiary = Color.fromRGBO(255, 255, 255, 1); // #ffffff
 
   static const warning = Color.fromRGBO(243, 146, 9, 1); // #f39209

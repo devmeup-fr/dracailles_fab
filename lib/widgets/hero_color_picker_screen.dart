@@ -72,11 +72,27 @@ class _HeroColorPickerScreenState extends State<HeroColorPickerScreen>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
         children: [
-          _buildColorGrid(context),
-          _buildHeroPicker(context),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildColorGrid(context),
+                _buildHeroPicker(context),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+            child: Text(
+              'Flesh and Blood™ is a registered trademark of Legend Story '
+              'Studios. Flesh and Blood™ and all associated images are '
+              'copyright © Legend Story Studios. All rights reserved.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 9, color: Colors.grey[600]),
+            ),
+          ),
         ],
       ),
     );
@@ -113,6 +129,10 @@ class _HeroColorPickerScreenState extends State<HeroColorPickerScreen>
         byClass.putIfAbsent(heroClass, () => []).add(hero);
       }
     }
+    // FabHeroClass's declaration order is the intended display order, not
+    // whichever order a class is first met while scanning heroes above.
+    final orderedClasses =
+        FabHeroClass.values.where(byClass.containsKey).toList();
 
     return Column(
       children: [
@@ -134,16 +154,6 @@ class _HeroColorPickerScreenState extends State<HeroColorPickerScreen>
                 setState(() => _showYoung = selection.first),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-          child: Text(
-            'Flesh and Blood™ is a registered trademark of Legend Story '
-            'Studios. Flesh and Blood™ and all associated images are '
-            'copyright © Legend Story Studios. All rights reserved.',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 9, color: Colors.grey[600]),
-          ),
-        ),
         Expanded(
           child: byClass.isEmpty
               ? Center(
@@ -154,20 +164,23 @@ class _HeroColorPickerScreenState extends State<HeroColorPickerScreen>
                 )
               : ListView(
                   padding: const EdgeInsets.all(20),
-                  children: byClass.entries.map((entry) {
+                  children: orderedClasses.map((heroClass) {
+                    final classHeroes = byClass[heroClass]!;
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 20),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(entry.key.displayName,
+                          Text(
+                              context.translate(
+                                  'player.heroClass.${heroClass.name}'),
                               style: const TextStyle(
                                   fontWeight: FontWeight.w600, fontSize: 16)),
                           const SizedBox(height: 12),
                           Wrap(
                             spacing: 16,
                             runSpacing: 16,
-                            children: entry.value.map((hero) {
+                            children: classHeroes.map((hero) {
                               return GestureDetector(
                                 onTap: () {
                                   widget.onHeroSelected(hero, _showYoung);

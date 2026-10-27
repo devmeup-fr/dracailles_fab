@@ -39,17 +39,16 @@ class _MatchScreenState extends State<MatchScreen>
   late List<HistoryEntry> _history;
 
   late MatchType _matchType;
-  final List<Color> _colorsToSelect = ThemeColors.colorsPlayerGame;
 
   void initGame() {
     _winner = null;
     GamePlayer firstPlayer = GamePlayer(
         index: 0,
-        color: _colorsToSelect[0],
+        color: ThemeColors.primary,
         life: _matchType.lifeGamePlayer);
     GamePlayer secondPlayer = GamePlayer(
         index: 1,
-        color: _colorsToSelect[1],
+        color: ThemeColors.secondary,
         life: _matchType.lifeGamePlayer);
     _players = [
       firstPlayer,

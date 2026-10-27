@@ -1,5 +1,23 @@
 {
     "common": {
         "appTitle": "Les Dracailles Fab Counter"
+    },
+    "player": {
+        "heroClass": {
+            "assassin": "Assassin",
+            "brute": "Brute",
+            "guardian": "Guardian",
+            "illusionist": "Illusionist",
+            "mechanologist": "Mechanologist",
+            "ninja": "Ninja",
+            "ranger": "Ranger",
+            "runeblade": "Runeblade",
+            "warrior": "Warrior",
+            "wizard": "Wizard",
+            "thief": "Thief",
+            "bard": "Bard",
+            "merchant": "Merchant",
+            "none": "None"
+        }
     }
 }
