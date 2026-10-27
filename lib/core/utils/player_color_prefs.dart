@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// game.
 String _colorKeyForPlayer(int playerIndex) => 'player_color_$playerIndex';
 String _heroKeyForPlayer(int playerIndex) => 'player_hero_$playerIndex';
+String _lifeKeyForPlayer(int playerIndex) => 'player_life_$playerIndex';
 
 Future<void> savePlayerColor(int playerIndex, Color color) async {
   final prefs = await SharedPreferences.getInstance();
@@ -38,4 +39,17 @@ Future<FabHero?> getPlayerHero(int playerIndex) async {
     if (hero.name == name) return hero;
   }
   return null;
+}
+
+/// Current life total, saved on every change so Android killing the app in
+/// the background (not just the user force-closing it) doesn't silently
+/// reset it back to the match's starting total on next launch.
+Future<void> savePlayerLife(int playerIndex, int life) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setInt(_lifeKeyForPlayer(playerIndex), life);
+}
+
+Future<int?> getPlayerLife(int playerIndex) async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getInt(_lifeKeyForPlayer(playerIndex));
 }

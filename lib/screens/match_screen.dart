@@ -71,8 +71,10 @@ class _MatchScreenState extends State<MatchScreen>
     _loadSavedAppearance();
   }
 
-  /// Restores the color/hero players picked last time, so they don't have
-  /// to re-select them at the start of every game.
+  /// Restores the color/hero/life players had last time, so they don't have
+  /// to re-select them at the start of every game, and so Android killing
+  /// the app in the background (not just a user force-close) doesn't look
+  /// like life points silently resetting.
   Future<void> _loadSavedAppearance() async {
     final savedColors = await Future.wait(
       [getPlayerColor(0), getPlayerColor(1)],
@@ -80,24 +82,34 @@ class _MatchScreenState extends State<MatchScreen>
     final savedHeroes = await Future.wait(
       [getPlayerHero(0), getPlayerHero(1)],
     );
+    final savedLife = await Future.wait(
+      [getPlayerLife(0), getPlayerLife(1)],
+    );
     if (!mounted) return;
     setState(() {
       for (var i = 0; i < _players.length; i++) {
         final color = savedColors[i];
         if (color != null) _players[i].color = color;
         final hero = savedHeroes[i];
-        if (hero != null) {
-          _players[i].hero = hero;
-          // initGame() set the format's default life before the hero was
-          // known - override it with the hero's own printed total (some
-          // heroes deviate from the usual 40/20).
-          _players[i].life = hero.life;
-          _history[i] = HistoryEntry(lifePoints: hero.life, player: _players[i]);
-        }
+        if (hero != null) _players[i].hero = hero;
+        // A saved life (an ongoing match) wins; otherwise fall back to the
+        // hero's own printed total (some heroes deviate from 40/20), then
+        // to the format's default.
+        _players[i].life = savedLife[i] ??
+            _players[i].hero?.life ??
+            _matchType.lifeGamePlayer;
+        _history[i] =
+            HistoryEntry(lifePoints: _players[i].life, player: _players[i]);
       }
       _syncMatchTypeToHeroes();
     });
+    _persistAllLife();
   }
+
+  Future<void> _persistLife(GamePlayer player) =>
+      savePlayerLife(player.index, player.life);
+
+  Future<void> _persistAllLife() => Future.wait(_players.map(_persistLife));
 
   /// Switches between Classic Constructed and Silver Age/Young based on
   /// whether either player currently has a Young hero, so a hero restored
@@ -156,6 +168,7 @@ class _MatchScreenState extends State<MatchScreen>
         HistoryEntry(lifePoints: player.life, player: player)
       ];
     });
+    _persistLife(player);
     _checkGameOver();
   }
 
@@ -181,6 +194,7 @@ class _MatchScreenState extends State<MatchScreen>
         HistoryEntry(lifePoints: _matchType.lifeGamePlayer, player: _players[1])
       ];
     });
+    _persistAllLife();
     _enableWakelockIfNeeded();
   }
 
@@ -196,6 +210,7 @@ class _MatchScreenState extends State<MatchScreen>
     setState(() {
       _players = players;
     });
+    _persistAllLife();
   }
 
   @override
