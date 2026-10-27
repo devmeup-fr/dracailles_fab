@@ -29,32 +29,49 @@ class ThemeColors {
   static const backgroundColor = Color.fromRGBO(241, 241, 241, 1);
   static const tabBackgroundColor = Color.fromRGBO(253, 233, 205, 1);
 
-  // Spread around the hue wheel, each kept dark enough (relative luminance
-  // <= 0.30) that the white player name overlaid on it stays readable.
+  // One continuous sweep around the hue wheel (sorted by hue), same
+  // saturation/lightness throughout so no tile stands out from the rest.
+  // The hue steps aren't evenly spaced on purpose: they're wide through
+  // yellow-green/green/teal (a couple of tiles is plenty, since that band
+  // reads as "more greens" even at equal angular spacing) and narrower
+  // everywhere else, so the panel doesn't skew green. Each tile still
+  // keeps relative luminance <= 0.30 so the white player name stays
+  // readable on top of it.
   static const colorsPlayerGame = [
     Color.fromRGBO(191, 61, 61, 1),
-    Color.fromRGBO(191, 94, 61, 1),
-    Color.fromRGBO(191, 126, 61, 1),
-    Color.fromRGBO(168, 140, 54, 1),
-    Color.fromRGBO(153, 153, 49, 1),
-    Color.fromRGBO(127, 153, 49, 1),
-    Color.fromRGBO(106, 161, 51, 1),
-    Color.fromRGBO(79, 161, 51, 1),
-    Color.fromRGBO(54, 168, 54, 1),
-    Color.fromRGBO(54, 168, 82, 1),
-    Color.fromRGBO(54, 168, 111, 1),
-    Color.fromRGBO(51, 161, 133, 1),
-    Color.fromRGBO(51, 161, 161, 1),
-    Color.fromRGBO(61, 159, 191, 1),
-    Color.fromRGBO(61, 126, 191, 1),
-    Color.fromRGBO(61, 94, 191, 1),
-    Color.fromRGBO(61, 61, 191, 1),
-    Color.fromRGBO(94, 61, 191, 1),
-    Color.fromRGBO(126, 61, 191, 1),
-    Color.fromRGBO(159, 61, 191, 1),
-    Color.fromRGBO(191, 61, 191, 1),
-    Color.fromRGBO(191, 61, 159, 1),
-    Color.fromRGBO(191, 61, 126, 1),
-    Color.fromRGBO(191, 61, 94, 1),
+    Color.fromRGBO(191, 80, 61, 1),
+    Color.fromRGBO(191, 100, 61, 1),
+    Color.fromRGBO(191, 119, 61, 1),
+    Color.fromRGBO(191, 138, 61, 1),
+    Color.fromRGBO(191, 158, 61, 1),
+    Color.fromRGBO(191, 177, 61, 1),
+    Color.fromRGBO(186, 191, 61, 1),
+    Color.fromRGBO(166, 191, 61, 1),
+    Color.fromRGBO(119, 191, 61, 1),
+    Color.fromRGBO(61, 191, 69, 1),
+    Color.fromRGBO(61, 191, 134, 1),
+    Color.fromRGBO(61, 191, 160, 1),
+    Color.fromRGBO(61, 191, 175, 1),
+    Color.fromRGBO(61, 191, 191, 1),
+    Color.fromRGBO(61, 175, 191, 1),
+    Color.fromRGBO(61, 160, 191, 1),
+    Color.fromRGBO(61, 145, 191, 1),
+    Color.fromRGBO(61, 129, 191, 1),
+    Color.fromRGBO(61, 114, 191, 1),
+    Color.fromRGBO(61, 98, 191, 1),
+    Color.fromRGBO(61, 83, 191, 1),
+    Color.fromRGBO(61, 67, 191, 1),
+    Color.fromRGBO(70, 61, 191, 1),
+    Color.fromRGBO(86, 61, 191, 1),
+    Color.fromRGBO(101, 61, 191, 1),
+    Color.fromRGBO(117, 61, 191, 1),
+    Color.fromRGBO(132, 61, 191, 1),
+    Color.fromRGBO(148, 61, 191, 1),
+    Color.fromRGBO(163, 61, 191, 1),
+    Color.fromRGBO(179, 61, 191, 1),
+    Color.fromRGBO(191, 61, 188, 1),
+    Color.fromRGBO(191, 61, 163, 1),
+    Color.fromRGBO(191, 61, 129, 1),
+    Color.fromRGBO(191, 61, 95, 1),
   ];
 }

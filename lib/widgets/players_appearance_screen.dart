@@ -1,4 +1,4 @@
-import 'package:fab_dracailles/core/utils/localization_util.dart';
+import 'package:fab_dracailles/core/data/fab_heroes.dart';
 import 'package:fab_dracailles/core/utils/player_color_prefs.dart';
 import 'package:fab_dracailles/models/game_player_model.dart';
 import 'package:fab_dracailles/models/match_type_model.dart';
@@ -36,9 +36,9 @@ class _PlayersAppearanceScreenState extends State<PlayersAppearanceScreen> {
 
     await Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => HeroColorPickerScreen(
-        playerLabel:
-            "${context.translate('player.entityName')} ${playerIndex + 1}",
         colors: widget.colors,
+        startOnHeroTab: widget.players[idx].hero != null,
+        startOnYoung: fabHeroesYoung.contains(widget.players[idx].hero),
         onColorSelected: (color) async {
           widget.players[idx].color = color;
           widget.players[idx].hero = null;

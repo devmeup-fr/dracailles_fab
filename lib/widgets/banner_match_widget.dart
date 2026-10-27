@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fab_dracailles/core/data/fab_heroes.dart';
 import 'package:fab_dracailles/core/utils/localization_util.dart';
 import 'package:fab_dracailles/core/utils/player_color_prefs.dart';
 import 'package:fab_dracailles/models/game_player_model.dart';
@@ -443,8 +444,9 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
         if (idx == -1) return;
         await Navigator.of(context).push(MaterialPageRoute(
           builder: (_) => HeroColorPickerScreen(
-            playerLabel: _playerLabel(context, widget.players[idx]),
             colors: _colorsToSelect,
+            startOnHeroTab: widget.players[idx].hero != null,
+            startOnYoung: fabHeroesYoung.contains(widget.players[idx].hero),
             onColorSelected: (color) async {
               widget.players[idx].color = color;
               widget.players[idx].hero = null;

@@ -6,17 +6,23 @@ import 'package:flutter/material.dart';
 /// player pick either a flat color or a hero to represent them. Picking
 /// either calls the matching callback then pops back to the caller.
 class HeroColorPickerScreen extends StatefulWidget {
-  final String playerLabel;
   final List<Color> colors;
   final void Function(Color color) onColorSelected;
   final void Function(FabHero hero, bool isYoung) onHeroSelected;
+  // Opens on the hero tab when the player already has one picked, and on
+  // the color tab otherwise, since that's the tab they're most likely here
+  // to change. Same idea for the Adult/Young segment, when they do have a
+  // hero.
+  final bool startOnHeroTab;
+  final bool startOnYoung;
 
   const HeroColorPickerScreen({
     super.key,
-    required this.playerLabel,
     required this.colors,
     required this.onColorSelected,
     required this.onHeroSelected,
+    this.startOnHeroTab = false,
+    this.startOnYoung = false,
   });
 
   @override
@@ -26,12 +32,17 @@ class HeroColorPickerScreen extends StatefulWidget {
 class _HeroColorPickerScreenState extends State<HeroColorPickerScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
-  bool _showYoung = false;
+  late bool _showYoung;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _showYoung = widget.startOnYoung;
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: widget.startOnHeroTab ? 1 : 0,
+    );
   }
 
   @override
@@ -45,7 +56,7 @@ class _HeroColorPickerScreenState extends State<HeroColorPickerScreen>
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.playerLabel,
+          context.translate('player.chooseAppearance'),
           style: const TextStyle(color: Colors.white),
         ),
         foregroundColor: Colors.white,
