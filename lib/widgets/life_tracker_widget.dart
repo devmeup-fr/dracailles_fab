@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:fab_dracailles/models/game_player_model.dart';
+import 'package:fab_dracailles/widgets/hero_art_crop.dart';
 import 'package:flutter/material.dart';
 
 class LifeTrackerWidget extends StatefulWidget {
@@ -90,18 +91,15 @@ class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
           // but its image file hasn't been dropped in assets/images/heros/
           // yet, the image silently fails to draw and the color shows
           // through instead of a broken-asset error.
-          decoration: BoxDecoration(
-            color: widget.gamePlayer.color,
-            image: widget.gamePlayer.hero == null
-                ? null
-                : DecorationImage(
-                    image: AssetImage(widget.gamePlayer.hero!.photoPath),
-                    fit: BoxFit.cover,
-                    onError: (exception, stackTrace) {},
-                  ),
-          ),
+          color: widget.gamePlayer.color,
           child: Stack(
             children: [
+              if (widget.gamePlayer.hero != null)
+                Positioned.fill(
+                  child: HeroArtCrop(
+                    assetPath: widget.gamePlayer.hero!.photoPath,
+                  ),
+                ),
               if (_temporaryLifeChange != 0)
                 Positioned(
                   left: 300,
