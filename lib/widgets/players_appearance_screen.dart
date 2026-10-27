@@ -13,15 +13,20 @@ import 'package:flutter/material.dart';
 class PlayersAppearanceScreen extends StatefulWidget {
   final List<GamePlayer> players;
   final List<Color> colors;
+  final MatchType matchType;
   final void Function(List<GamePlayer> players) setPlayers;
-  final void Function(MatchTypeEnum type) applyMatchType;
+  // Switches the match between Classic Constructed and Silver Age/Young
+  // based on both players' current heroes (not just whichever one was
+  // just picked) - called after this player's hero/color is applied.
+  final void Function() syncMatchType;
 
   const PlayersAppearanceScreen({
     super.key,
     required this.players,
     required this.colors,
+    required this.matchType,
     required this.setPlayers,
-    required this.applyMatchType,
+    required this.syncMatchType,
   });
 
   @override
@@ -38,24 +43,25 @@ class _PlayersAppearanceScreenState extends State<PlayersAppearanceScreen> {
       builder: (_) => HeroColorPickerScreen(
         colors: widget.colors,
         startOnHeroTab: widget.players[idx].hero != null,
-        startOnYoung: fabHeroesYoung.contains(widget.players[idx].hero),
+        // A hero already picked wins; otherwise default to whichever the
+        // match is already running as (so a SAGE match suggests Young
+        // heroes instead of always defaulting to Adult).
+        startOnYoung: widget.players[idx].hero != null
+            ? fabHeroesYoung.contains(widget.players[idx].hero)
+            : widget.matchType.type != MatchTypeEnum.classicConstructed,
         onColorSelected: (color) async {
           widget.players[idx].color = color;
           widget.players[idx].hero = null;
           widget.setPlayers(widget.players);
+          widget.syncMatchType();
           await savePlayerColor(playerIndex, color);
           await savePlayerHero(playerIndex, null);
         },
         onHeroSelected: (hero, isYoung) async {
           widget.players[idx].hero = hero;
-          widget.setPlayers(widget.players);
-          // Resets both players to the format's default life, then this
-          // player's life is overridden to the hero's own printed total
-          // (some heroes deviate from the usual 40/20).
-          widget.applyMatchType(
-              isYoung ? MatchTypeEnum.sage : MatchTypeEnum.classicConstructed);
           widget.players[idx].life = hero.life;
           widget.setPlayers(widget.players);
+          widget.syncMatchType();
           await savePlayerHero(playerIndex, hero);
         },
       ),

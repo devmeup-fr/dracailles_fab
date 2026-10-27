@@ -63,6 +63,25 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
   }
 
   @override
+  void didUpdateWidget(covariant BannerMatchWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // The match type can also change from outside (match_screen.dart
+    // syncing it to a restored hero at startup, not through
+    // _applyMatchType below) - react to that the same way: restart the
+    // timer for the new format's duration.
+    if (oldWidget.matchType.type != widget.matchType.type) {
+      final duration = widget.matchType.durationGame;
+      _timer?.cancel();
+      setState(() {
+        _timeLeft = duration;
+        _timerDuration = duration;
+        _timerStarted = false;
+        _timerPause = false;
+      });
+    }
+  }
+
+  @override
   dispose() {
     super.dispose();
     _timer?.cancel();
@@ -86,6 +105,28 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
       _timerStarted = false;
       _timerPause = false;
     });
+  }
+
+  /// Switches the match between Classic Constructed and Silver Age/Young
+  /// based on whether EITHER player currently has a Young hero - not just
+  /// whichever one was just picked, so picking an Adult hero for one
+  /// player doesn't flip the format back while the other is still Young.
+  /// No-ops if the format is already right, so it stays silent when the
+  /// pick didn't need to change it.
+  void _syncMatchTypeToHeroes() {
+    final wantsYoung = widget.players
+        .any((p) => p.hero != null && fabHeroesYoung.contains(p.hero));
+    final target =
+        wantsYoung ? MatchTypeEnum.sage : MatchTypeEnum.classicConstructed;
+    if (widget.matchType.type == target) return;
+    _applyMatchType(target);
+    // _applyMatchType()'s resetGame() put both players back to the
+    // format's default life - players with their own hero keep its
+    // printed total instead (some heroes deviate from the usual 40/20).
+    for (final player in widget.players) {
+      if (player.hero != null) player.life = player.hero!.life;
+    }
+    widget.setPlayers(widget.players);
   }
 
   Future<void> _rollDie() async {
@@ -446,22 +487,25 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
           builder: (_) => HeroColorPickerScreen(
             colors: _colorsToSelect,
             startOnHeroTab: widget.players[idx].hero != null,
-            startOnYoung: fabHeroesYoung.contains(widget.players[idx].hero),
+            // A hero already picked wins; otherwise default to whichever
+            // the match is already running as (so a SAGE match suggests
+            // Young heroes instead of always defaulting to Adult).
+            startOnYoung: widget.players[idx].hero != null
+                ? fabHeroesYoung.contains(widget.players[idx].hero)
+                : widget.matchType.type != MatchTypeEnum.classicConstructed,
             onColorSelected: (color) async {
               widget.players[idx].color = color;
               widget.players[idx].hero = null;
               widget.setPlayers(widget.players);
+              _syncMatchTypeToHeroes();
               await savePlayerColor(index, color);
               await savePlayerHero(index, null);
             },
             onHeroSelected: (hero, isYoung) async {
               widget.players[idx].hero = hero;
-              widget.setPlayers(widget.players);
-              _applyMatchType(isYoung
-                  ? MatchTypeEnum.sage
-                  : MatchTypeEnum.classicConstructed);
               widget.players[idx].life = hero.life;
               widget.setPlayers(widget.players);
+              _syncMatchTypeToHeroes();
               await savePlayerHero(index, hero);
             },
           ),
@@ -601,9 +645,10 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                           builder: (_) => PlayersAppearanceScreen(
                             players: widget.players,
                             colors: _colorsToSelect,
+                            matchType: widget.matchType,
                             setPlayers: (players) =>
                                 widget.setPlayers(players),
-                            applyMatchType: _applyMatchType,
+                            syncMatchType: _syncMatchTypeToHeroes,
                           ),
                         );
                       },

@@ -1,3 +1,4 @@
+import 'package:fab_dracailles/core/data/fab_heroes.dart';
 import 'package:fab_dracailles/core/utils/player_color_prefs.dart';
 import 'package:fab_dracailles/models/match_type_model.dart';
 import 'package:fab_dracailles/theme/colors.dart';
@@ -85,9 +86,43 @@ class _MatchScreenState extends State<MatchScreen>
         final color = savedColors[i];
         if (color != null) _players[i].color = color;
         final hero = savedHeroes[i];
-        if (hero != null) _players[i].hero = hero;
+        if (hero != null) {
+          _players[i].hero = hero;
+          // initGame() set the format's default life before the hero was
+          // known - override it with the hero's own printed total (some
+          // heroes deviate from the usual 40/20).
+          _players[i].life = hero.life;
+          _history[i] = HistoryEntry(lifePoints: hero.life, player: _players[i]);
+        }
       }
+      _syncMatchTypeToHeroes();
     });
+  }
+
+  /// Switches between Classic Constructed and Silver Age/Young based on
+  /// whether either player currently has a Young hero, so a hero restored
+  /// at startup gets the right format from the first frame (banner_match_
+  /// widget.dart does the same thing when a hero is picked in-session) -
+  /// the timer duration and the default life for a player without their
+  /// own hero both depend on the format. No-ops if it's already right.
+  void _syncMatchTypeToHeroes() {
+    final wantsYoung =
+        _players.any((p) => p.hero != null && fabHeroesYoung.contains(p.hero));
+    final target =
+        wantsYoung ? MatchTypeEnum.sage : MatchTypeEnum.classicConstructed;
+    if (_matchType.type == target) return;
+    _matchType = MatchType(
+      type: target,
+      durationGame: MatchType.getDurationByType(target),
+      lifeGamePlayer: MatchType.getLifeGamePlayerByType(target),
+    );
+    for (final player in _players) {
+      if (player.hero == null) player.life = _matchType.lifeGamePlayer;
+    }
+    for (var i = 0; i < _history.length; i++) {
+      _history[i] =
+          HistoryEntry(lifePoints: _players[i].life, player: _players[i]);
+    }
   }
 
   @override
