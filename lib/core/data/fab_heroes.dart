@@ -270,6 +270,8 @@ const List<FabHero> fabHeroesYoung = [
   FabHero(
       'Victor Goldmane', [FabHeroClass.guardian], 'victor-goldmane.webp', 20),
   FabHero('Viserai', [FabHeroClass.runeblade], 'viserai.webp', 20),
+  FabHero('Viserai Between Worlds', [FabHeroClass.runeblade],
+      'viserai-between-worlds.webp', 20),
   FabHero('Vyle', [FabHeroClass.ranger], 'vyle.webp', 20),
   FabHero('Vynnset', [FabHeroClass.runeblade], 'vynnset.webp', 20),
   FabHero('Zane Broadly Beloved', [FabHeroClass.warrior],

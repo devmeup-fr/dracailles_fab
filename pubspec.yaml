@@ -49,6 +49,8 @@ flutter:
   assets:
     - assets/i18n/
     - assets/images/
+    - assets/images/hero_thumbnails/
+    - assets/images/hero_photos/
 
 flutter_launcher_icons:
   android: 'launcher_icon'

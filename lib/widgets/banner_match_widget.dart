@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:fab_dracailles/core/data/fab_heroes.dart';
 import 'package:fab_dracailles/core/utils/localization_util.dart';
 import 'package:fab_dracailles/core/utils/player_color_prefs.dart';
 import 'package:fab_dracailles/models/game_player_model.dart';
@@ -8,6 +7,8 @@ import 'package:fab_dracailles/models/match_type_model.dart';
 import 'package:fab_dracailles/screens/match_screen.dart';
 import 'package:fab_dracailles/theme/colors.dart';
 import 'package:fab_dracailles/widgets/devmeup_widget.dart';
+import 'package:fab_dracailles/widgets/hero_color_picker_screen.dart';
+import 'package:fab_dracailles/widgets/players_appearance_screen.dart';
 import 'package:fab_dracailles/widgets/radial_menu_widget.dart';
 import 'package:flutter/material.dart';
 
@@ -64,6 +65,26 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
   dispose() {
     super.dispose();
     _timer?.cancel();
+  }
+
+  /// Applies a match format: updates duration/life (via [MatchType]), resets
+  /// both players' life to the new total, and restarts the timer state.
+  void _applyMatchType(MatchTypeEnum value) {
+    int duration = MatchType.getDurationByType(value);
+    widget.setMatchType(MatchType(
+      type: value,
+      durationGame: duration,
+      lifeGamePlayer: MatchType.getLifeGamePlayerByType(value),
+    ));
+    initGame();
+    widget.resetGame();
+    _timer?.cancel();
+    setState(() {
+      _timeLeft = duration;
+      _timerDuration = duration;
+      _timerStarted = false;
+      _timerPause = false;
+    });
   }
 
   Future<void> _rollDie() async {
@@ -178,266 +199,6 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
   String _playerLabel(BuildContext context, GamePlayer player) =>
       player.hero?.name ??
       "${context.translate('player.entityName')} ${player.index + 1}";
-
-  void changePlayersColor() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(context.translate("player.changeColorPlayers")),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children:
-              widget.players.reversed.toList().asMap().entries.map((entry) {
-            GamePlayer player = entry.value;
-
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Row(
-                children: [
-                  if (player.hero != null)
-                    CircleAvatar(
-                      radius: 20,
-                      backgroundImage: AssetImage(player.hero!.thumbnailPath),
-                      onBackgroundImageError: (exception, stackTrace) {},
-                      backgroundColor: player.color,
-                    )
-                  else
-                    CircleAvatar(radius: 20, backgroundColor: player.color),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(_playerLabel(context, player)),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      selectPlayerAppearance(player.index,
-                          onApplied: changePlayersColor);
-                    },
-                    child: Text(context.translate("player.changeColor")),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(context.translate("common.close")),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Applies a match format: updates duration/life (via [MatchType]), resets
-  /// both players' life to the new total, and restarts the timer state.
-  void _applyMatchType(MatchTypeEnum value) {
-    int duration = MatchType.getDurationByType(value);
-    widget.setMatchType(MatchType(
-      type: value,
-      durationGame: duration,
-      lifeGamePlayer: MatchType.getLifeGamePlayerByType(value),
-    ));
-    initGame();
-    widget.resetGame();
-    _timer?.cancel();
-    setState(() {
-      _timeLeft = duration;
-      _timerDuration = duration;
-      _timerStarted = false;
-      _timerPause = false;
-    });
-  }
-
-  /// Opens the color/hero picker for [playerIndex]. [onApplied] runs after
-  /// a pick closes the picker - pass [changePlayersColor] to reopen that
-  /// list (when entering from there), or leave it null when the caller
-  /// (e.g. the Settings dialog) already rebuilds itself on its own, so we
-  /// don't stack an extra, unrelated dialog on top of it.
-  void selectPlayerAppearance(int playerIndex, {VoidCallback? onApplied}) {
-    int indexOfPlayerByIndex(List<GamePlayer> players, int wantedIndex) =>
-        players.indexWhere((p) => p.index == wantedIndex);
-
-    int tab = 0; // 0 = couleur, 1 = héros
-    bool showYoung = false;
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(builder: (context, setModalState) {
-          Widget colorGrid() => Wrap(
-                spacing: 16,
-                runSpacing: 16,
-                children: _colorsToSelect.map((color) {
-                  return GestureDetector(
-                    onTap: () async {
-                      List<GamePlayer> updatePlayers = widget.players;
-                      final idx =
-                          indexOfPlayerByIndex(updatePlayers, playerIndex);
-                      if (idx != -1) {
-                        updatePlayers[idx].color = color;
-                        updatePlayers[idx].hero = null;
-                      }
-                      widget.setPlayers(updatePlayers);
-                      await savePlayerColor(playerIndex, color);
-                      await savePlayerHero(playerIndex, null);
-                      if (!context.mounted) return;
-                      Navigator.of(context).pop();
-                      onApplied?.call();
-                    },
-                    child: CircleAvatar(radius: 28, backgroundColor: color),
-                  );
-                }).toList(),
-              );
-
-          Widget heroTile(FabHero hero) => GestureDetector(
-                onTap: () async {
-                  List<GamePlayer> updatePlayers = widget.players;
-                  final idx =
-                      indexOfPlayerByIndex(updatePlayers, playerIndex);
-                  if (idx != -1) {
-                    updatePlayers[idx].hero = hero;
-                  }
-                  widget.setPlayers(updatePlayers);
-                  // Resets both players to the format's default life, then
-                  // this player's life is overridden below to the hero's
-                  // own printed total (some heroes deviate from 40/20).
-                  _applyMatchType(showYoung
-                      ? MatchTypeEnum.sage
-                      : MatchTypeEnum.classicConstructed);
-                  if (idx != -1) {
-                    widget.players[idx].life = hero.life;
-                    widget.setPlayers(widget.players);
-                  }
-                  await savePlayerHero(playerIndex, hero);
-                  if (!context.mounted) return;
-                  Navigator.of(context).pop();
-                  onApplied?.call();
-                },
-                child: SizedBox(
-                  width: 72,
-                  child: Column(
-                    children: [
-                      CircleAvatar(
-                        radius: 28,
-                        backgroundColor: Colors.grey[300],
-                        backgroundImage: AssetImage(hero.thumbnailPath),
-                        onBackgroundImageError: (exception, stackTrace) {},
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        hero.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 11),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-
-          Widget heroPicker() {
-            final heroes = showYoung ? fabHeroesYoung : fabHeroesAdult;
-            final byClass = <FabHeroClass, List<FabHero>>{};
-            for (final hero in heroes) {
-              // Multi-class heroes show up under each of their classes.
-              for (final heroClass in hero.heroClasses) {
-                byClass.putIfAbsent(heroClass, () => []).add(hero);
-              }
-            }
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ToggleButtons(
-                  isSelected: [!showYoung, showYoung],
-                  onPressed: (i) => setModalState(() => showYoung = i == 1),
-                  borderRadius: BorderRadius.circular(8),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(context.translate('player.heroAdult')),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(context.translate('player.heroYoung')),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                if (byClass.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    child: Text(context.translate('player.noHeroes'),
-                        style: TextStyle(color: Colors.grey[600])),
-                  )
-                else
-                  ...byClass.entries.map((entry) => Padding(
-                        padding: const EdgeInsets.only(bottom: 20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(entry.key.displayName,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w600)),
-                            const SizedBox(height: 12),
-                            Wrap(
-                              spacing: 16,
-                              runSpacing: 16,
-                              children: entry.value.map(heroTile).toList(),
-                            ),
-                          ],
-                        ),
-                      )),
-              ],
-            );
-          }
-
-          return AlertDialog(
-            scrollable: true,
-            insetPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-            title: Text(context.translate("player.changeColorPlayerName",
-                translationParams: {
-                  "name": _playerLabel(context, widget.players[playerIndex])
-                })),
-            content: SizedBox(
-              width: MediaQuery.of(context).size.width * 0.82,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ToggleButtons(
-                    isSelected: [tab == 0, tab == 1],
-                    onPressed: (i) => setModalState(() => tab = i),
-                    borderRadius: BorderRadius.circular(8),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(context.translate('player.color')),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(context.translate('player.hero')),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  if (tab == 0) colorGrid() else heroPicker(),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(context.translate('common.cancel')),
-              ),
-            ],
-          );
-        });
-      },
-    );
-  }
 
   void showHistory() {
     List<HistoryEntry> player0History = widget.history
@@ -677,8 +438,34 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
   Widget _buildPlayerTile(GamePlayer player, int index,
       void Function(void Function()) setModalState) {
     return GestureDetector(
-      onTap: () => selectPlayerAppearance(index,
-          onApplied: () => setModalState(() {})),
+      onTap: () async {
+        final idx = widget.players.indexWhere((p) => p.index == index);
+        if (idx == -1) return;
+        await Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => HeroColorPickerScreen(
+            playerLabel: _playerLabel(context, widget.players[idx]),
+            colors: _colorsToSelect,
+            onColorSelected: (color) async {
+              widget.players[idx].color = color;
+              widget.players[idx].hero = null;
+              widget.setPlayers(widget.players);
+              await savePlayerColor(index, color);
+              await savePlayerHero(index, null);
+            },
+            onHeroSelected: (hero, isYoung) async {
+              widget.players[idx].hero = hero;
+              widget.setPlayers(widget.players);
+              _applyMatchType(isYoung
+                  ? MatchTypeEnum.sage
+                  : MatchTypeEnum.classicConstructed);
+              widget.players[idx].life = hero.life;
+              widget.setPlayers(widget.players);
+              await savePlayerHero(index, hero);
+            },
+          ),
+        ));
+        setModalState(() {});
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         decoration: BoxDecoration(
@@ -807,7 +594,16 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                       tooltip: context.translate('player.changeColorPlayers'),
                       onTap: () {
                         _closeRadialMenu();
-                        changePlayersColor();
+                        showDialog(
+                          context: context,
+                          builder: (_) => PlayersAppearanceScreen(
+                            players: widget.players,
+                            colors: _colorsToSelect,
+                            setPlayers: (players) =>
+                                widget.setPlayers(players),
+                            applyMatchType: _applyMatchType,
+                          ),
+                        );
                       },
                     ),
                     RadialAction(
