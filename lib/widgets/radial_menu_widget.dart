@@ -62,60 +62,67 @@ class RadialMenuState extends State<RadialMenu>
   @override
   Widget build(BuildContext context) {
     if (widget.items.isEmpty) return const SizedBox.shrink();
-    final size = MediaQuery.of(context).size;
 
-    return AnimatedBuilder(
-      animation: _anim,
-      builder: (context, child) {
-        final radius = widget.radius * _anim.value;
+    // Not MediaQuery.of(context).size: that's the physical window, but on
+    // the web build this Stack only occupies MaterialApp.builder's
+    // phone-width cap, not the whole window - clamping against the wrong
+    // (larger) size would let icons land outside the box they actually
+    // render in.
+    return LayoutBuilder(builder: (context, constraints) {
+      final size = constraints.biggest;
+      return AnimatedBuilder(
+        animation: _anim,
+        builder: (context, child) {
+          final radius = widget.radius * _anim.value;
 
-        // Rotating this whole Stack - not each icon separately - pivots
-        // around its own center, which is widget.center since the Stack
-        // fills the screen: so the wheel ends up in the same place, just
-        // flipped as one block.
-        return Transform.rotate(
-          angle: widget.inverted ? math.pi : 0,
-          child: Stack(
-            children: [
-              // Point d’ancrage central (invisible)
-              Positioned.fill(
-                child: CustomSingleChildLayout(
-                  delegate: _CenterAnchorDelegate(widget.center),
-                  child: const SizedBox(width: 1, height: 1),
+          // Rotating this whole Stack - not each icon separately - pivots
+          // around its own center, which is widget.center since the Stack
+          // fills the screen: so the wheel ends up in the same place, just
+          // flipped as one block.
+          return Transform.rotate(
+            angle: widget.inverted ? math.pi : 0,
+            child: Stack(
+              children: [
+                // Point d’ancrage central (invisible)
+                Positioned.fill(
+                  child: CustomSingleChildLayout(
+                    delegate: _CenterAnchorDelegate(widget.center),
+                    child: const SizedBox(width: 1, height: 1),
+                  ),
                 ),
-              ),
 
-              // Items sur le cercle
-              ...List.generate(widget.items.length, (i) {
-                final angle =
-                    (-math.pi / 2) + (2 * math.pi * i / widget.items.length);
-                final dx = radius * math.cos(angle);
-                final dy = radius * math.sin(angle);
+                // Items sur le cercle
+                ...List.generate(widget.items.length, (i) {
+                  final angle =
+                      (-math.pi / 2) + (2 * math.pi * i / widget.items.length);
+                  final dx = radius * math.cos(angle);
+                  final dy = radius * math.sin(angle);
 
-                final left = (widget.center.dx + dx).clamp(0.0, size.width);
-                final top = (widget.center.dy + dy).clamp(0.0, size.height);
+                  final left = (widget.center.dx + dx).clamp(0.0, size.width);
+                  final top = (widget.center.dy + dy).clamp(0.0, size.height);
 
-                return Positioned(
-                  left: left - 28, // 56/2 pour centrer le bouton
-                  top: top - 28,
-                  child: Opacity(
-                    opacity: _anim.value,
-                    child: Transform.scale(
-                      scale: _anim.value,
-                      child: _RadialIconButton(
-                        icon: widget.items[i].icon,
-                        tooltip: widget.items[i].tooltip,
-                        onTap: widget.items[i].onTap,
+                  return Positioned(
+                    left: left - 28, // 56/2 pour centrer le bouton
+                    top: top - 28,
+                    child: Opacity(
+                      opacity: _anim.value,
+                      child: Transform.scale(
+                        scale: _anim.value,
+                        child: _RadialIconButton(
+                          icon: widget.items[i].icon,
+                          tooltip: widget.items[i].tooltip,
+                          onTap: widget.items[i].onTap,
+                        ),
                       ),
                     ),
-                  ),
-                );
-              }),
-            ],
-          ),
-        );
-      },
-    );
+                  );
+                }),
+              ],
+            ),
+          );
+        },
+      );
+    });
   }
 }
 

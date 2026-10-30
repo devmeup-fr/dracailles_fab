@@ -255,6 +255,9 @@ class _MatchScreenState extends State<MatchScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    // The phone-width cap for wide (web) windows is applied once, for
+    // every screen/dialog, via MaterialApp.builder in main.dart - nothing
+    // screen-specific needed here.
     return Scaffold(
       body: Stack(
         children: [

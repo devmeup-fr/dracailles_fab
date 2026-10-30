@@ -92,6 +92,25 @@ class MyApp extends StatelessWidget {
                   context.translate("common.appTitle"),
               theme: Themes.light(),
               home: const PopScope(canPop: false, child: HomeScreen()),
+              // On a phone this never kicks in (screens are already
+              // narrower than the cap) - it only matters on a wide browser
+              // window (the web build), where stretching every screen and
+              // dialog edge to edge would force hero art into an extreme,
+              // unrecognizable crop and spread everything else out oddly.
+              // Applied here (not per-screen) so it covers pushed routes
+              // and dialogs too, not just the match screen itself.
+              builder: (context, child) {
+                if (child == null) return const SizedBox.shrink();
+                return ColoredBox(
+                  color: const Color(0xFF1b1b1b),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 520),
+                      child: child,
+                    ),
+                  ),
+                );
+              },
             ));
   }
 }

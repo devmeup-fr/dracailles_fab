@@ -728,7 +728,15 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
 
     final size = box.size;
     final offset = box.localToGlobal(Offset.zero);
-    final center = offset + Offset(size.width / 2, size.height / 2);
+    // RadialMenu positions its items with Positioned inside a Stack that
+    // lives in the Overlay - on the web build the Overlay itself sits
+    // inside MaterialApp.builder's phone-width cap, so its own origin no
+    // longer coincides with the window's. localToGlobal gives a
+    // window-relative point; re-basing it onto the overlay's own box is
+    // what Positioned actually needs.
+    final overlayBox = overlay.context.findRenderObject() as RenderBox;
+    final center = overlayBox
+        .globalToLocal(offset + Offset(size.width / 2, size.height / 2));
 
     Entry = OverlayEntry(
       builder: (ctx) {
