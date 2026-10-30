@@ -39,13 +39,15 @@ class _MatchScreenState extends State<MatchScreen>
   late List<HistoryEntry> _history;
 
   late MatchType _matchType;
+  // Tracks reversePlayers() state so it can be persisted/restored - without
+  // this, an app restart always put the original order back, undoing a
+  // reversal the player had made before.
+  bool _playersReversed = false;
 
   void initGame() {
     _winner = null;
     GamePlayer firstPlayer = GamePlayer(
-        index: 0,
-        color: ThemeColors.primary,
-        life: _matchType.lifeGamePlayer);
+        index: 0, color: ThemeColors.primary, life: _matchType.lifeGamePlayer);
     GamePlayer secondPlayer = GamePlayer(
         index: 1,
         color: ThemeColors.secondary,
@@ -84,8 +86,17 @@ class _MatchScreenState extends State<MatchScreen>
     final savedLife = await Future.wait(
       [getPlayerLife(0), getPlayerLife(1)],
     );
+    final savedHistory = await Future.wait(
+      [getPlayerHistory(0), getPlayerHistory(1)],
+    );
+    final reversed = await getPlayersReversed();
     if (!mounted) return;
     setState(() {
+      // _players[i] is still in its freshly-created, un-reversed order here
+      // (index i matches GamePlayer.index i) - restoring each slot's saved
+      // data by that same i is what keeps it matched to the right player
+      // even if the list gets reordered below.
+      final newHistory = <HistoryEntry>[];
       for (var i = 0; i < _players.length; i++) {
         final color = savedColors[i];
         if (color != null) _players[i].color = color;
@@ -94,21 +105,43 @@ class _MatchScreenState extends State<MatchScreen>
         // A saved life (an ongoing match) wins; otherwise fall back to the
         // hero's own printed total (some heroes deviate from 40/20), then
         // to the format's default.
-        _players[i].life = savedLife[i] ??
-            _players[i].hero?.life ??
-            _matchType.lifeGamePlayer;
-        _history[i] =
-            HistoryEntry(lifePoints: _players[i].life, player: _players[i]);
+        _players[i].life =
+            savedLife[i] ?? _players[i].hero?.life ?? _matchType.lifeGamePlayer;
+        final points = savedHistory[i];
+        if (points.isEmpty) {
+          newHistory.add(
+              HistoryEntry(lifePoints: _players[i].life, player: _players[i]));
+        } else {
+          newHistory.addAll(points
+              .map((p) => HistoryEntry(lifePoints: p, player: _players[i])));
+        }
       }
+      _history = newHistory;
       _syncMatchTypeToHeroes();
+      // Applied last, after each player's own data is in place, so this
+      // only reorders the list (matching whichever layout was left before
+      // closing the app) without touching which data belongs to whom.
+      if (reversed) {
+        _playersReversed = true;
+        _players = List.from(_players.reversed);
+      }
     });
     _persistAllLife();
+    _persistHistory();
   }
 
   Future<void> _persistLife(GamePlayer player) =>
       savePlayerLife(player.index, player.life);
 
   Future<void> _persistAllLife() => Future.wait(_players.map(_persistLife));
+
+  Future<void> _persistHistory() =>
+      Future.wait(_players.map((player) => savePlayerHistory(
+          player.index,
+          _history
+              .where((entry) => entry.player == player)
+              .map((entry) => entry.lifePoints)
+              .toList())));
 
   /// Switches between Classic Constructed and Silver Age/Young based on
   /// whether either player currently has a Young hero, so a hero restored
@@ -127,12 +160,15 @@ class _MatchScreenState extends State<MatchScreen>
       durationGame: MatchType.getDurationByType(target),
       lifeGamePlayer: MatchType.getLifeGamePlayerByType(target),
     );
+    // Appended, not rebuilt by position - _history can now hold several
+    // restored entries per player (not just one each), so overwriting
+    // _history[i] by index would mix up whose entry is whose as soon as
+    // one player has more points than the other.
     for (final player in _players) {
-      if (player.hero == null) player.life = _matchType.lifeGamePlayer;
-    }
-    for (var i = 0; i < _history.length; i++) {
-      _history[i] =
-          HistoryEntry(lifePoints: _players[i].life, player: _players[i]);
+      if (player.hero == null) {
+        player.life = _matchType.lifeGamePlayer;
+        _history.add(HistoryEntry(lifePoints: player.life, player: player));
+      }
     }
   }
 
@@ -168,6 +204,7 @@ class _MatchScreenState extends State<MatchScreen>
       ];
     });
     _persistLife(player);
+    _persistHistory();
     _checkGameOver();
   }
 
@@ -194,15 +231,18 @@ class _MatchScreenState extends State<MatchScreen>
       ];
     });
     _persistAllLife();
+    _persistHistory();
     _enableWakelockIfNeeded();
   }
 
   void _reversePlayers() {
     setState(() {
       _players = List.from(_players.reversed);
+      _playersReversed = !_playersReversed;
       _player1Key.currentState?.resetLife();
       _player2Key.currentState?.resetLife();
     });
+    savePlayersReversed(_playersReversed);
   }
 
   void _setPlayers(List<GamePlayer> players) {

@@ -103,7 +103,7 @@
             "dieType": "Type de dé",
             "rollDie": "Lancer le dé",
             "rollAgain": "Lancer de nouveau",
-            "dieRoll": "Dés lancé (D{sides})",
+            "dieRoll": "Dé lancé (D{sides})",
             "dieRolled": "Vous avez fait"
         }
     }

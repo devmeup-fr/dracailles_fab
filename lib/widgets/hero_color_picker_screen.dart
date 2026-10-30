@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:fab_dracailles/core/data/fab_heroes.dart';
 import 'package:fab_dracailles/core/utils/localization_util.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +17,10 @@ class HeroColorPickerScreen extends StatefulWidget {
   // hero.
   final bool startOnHeroTab;
   final bool startOnYoung;
+  // True when opened from the top player's (rotated) side of the match
+  // screen, so this screen renders upside down too and reads right-side up
+  // for them - same idea as LifeTrackerWidget's own invertMode.
+  final bool inverted;
 
   const HeroColorPickerScreen({
     super.key,
@@ -23,6 +29,7 @@ class HeroColorPickerScreen extends StatefulWidget {
     required this.onHeroSelected,
     this.startOnHeroTab = false,
     this.startOnYoung = false,
+    this.inverted = false,
   });
 
   @override
@@ -53,47 +60,50 @@ class _HeroColorPickerScreenState extends State<HeroColorPickerScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          context.translate('player.chooseAppearance'),
-          style: const TextStyle(color: Colors.white),
+    return Transform.rotate(
+      angle: widget.inverted ? math.pi : 0,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            context.translate('player.chooseAppearance'),
+            style: const TextStyle(color: Colors.white),
+          ),
+          foregroundColor: Colors.white,
+          iconTheme: const IconThemeData(color: Colors.white),
+          bottom: TabBar(
+            controller: _tabController,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white70,
+            indicatorColor: Colors.white,
+            tabs: [
+              Tab(text: context.translate('player.color')),
+              Tab(text: context.translate('player.hero')),
+            ],
+          ),
         ),
-        foregroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: Colors.white),
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          indicatorColor: Colors.white,
-          tabs: [
-            Tab(text: context.translate('player.color')),
-            Tab(text: context.translate('player.hero')),
+        body: Column(
+          children: [
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildColorGrid(context),
+                  _buildHeroPicker(context),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+              child: Text(
+                'Flesh and Blood™ is a registered trademark of Legend Story '
+                'Studios. Flesh and Blood™ and all associated images are '
+                'copyright © Legend Story Studios. All rights reserved.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 9, color: Colors.grey[600]),
+              ),
+            ),
           ],
         ),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildColorGrid(context),
-                _buildHeroPicker(context),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-            child: Text(
-              'Flesh and Blood™ is a registered trademark of Legend Story '
-              'Studios. Flesh and Blood™ and all associated images are '
-              'copyright © Legend Story Studios. All rights reserved.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 9, color: Colors.grey[600]),
-            ),
-          ),
-        ],
       ),
     );
   }

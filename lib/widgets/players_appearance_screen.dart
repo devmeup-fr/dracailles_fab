@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:fab_dracailles/core/data/fab_heroes.dart';
 import 'package:fab_dracailles/core/utils/player_color_prefs.dart';
 import 'package:fab_dracailles/models/game_player_model.dart';
@@ -19,6 +21,10 @@ class PlayersAppearanceScreen extends StatefulWidget {
   // based on both players' current heroes (not just whichever one was
   // just picked) - called after this player's hero/color is applied.
   final void Function() syncMatchType;
+  // True when opened from the top player's (rotated) badge, so this dialog
+  // and any screen it pushes render upside down and read right-side up for
+  // them - same idea as LifeTrackerWidget's own invertMode.
+  final bool inverted;
 
   const PlayersAppearanceScreen({
     super.key,
@@ -27,6 +33,7 @@ class PlayersAppearanceScreen extends StatefulWidget {
     required this.matchType,
     required this.setPlayers,
     required this.syncMatchType,
+    this.inverted = false,
   });
 
   @override
@@ -42,6 +49,7 @@ class _PlayersAppearanceScreenState extends State<PlayersAppearanceScreen> {
     await Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => HeroColorPickerScreen(
         colors: widget.colors,
+        inverted: widget.inverted,
         startOnHeroTab: widget.players[idx].hero != null,
         // A hero already picked wins; otherwise default to whichever the
         // match is already running as (so a SAGE match suggests Young
@@ -76,9 +84,8 @@ class _PlayersAppearanceScreenState extends State<PlayersAppearanceScreen> {
       child: CircleAvatar(
         radius: 48,
         backgroundColor: player.color,
-        backgroundImage: player.hero != null
-            ? AssetImage(player.hero!.thumbnailPath)
-            : null,
+        backgroundImage:
+            player.hero != null ? AssetImage(player.hero!.thumbnailPath) : null,
         onBackgroundImageError:
             player.hero != null ? (exception, stackTrace) {} : null,
       ),
@@ -87,20 +94,32 @@ class _PlayersAppearanceScreenState extends State<PlayersAppearanceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+    return Transform.rotate(
+      angle: widget.inverted ? math.pi : 0,
+      child: Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             // Match screen shows players[1] at the top (inverted) and
-            // players[0] at the bottom, so the bubbles follow that order.
-            _buildBubble(widget.players[1]),
-            const SizedBox(height: 28),
-            _buildBubble(widget.players[0]),
-          ],
+            // players[0] at the bottom. The whole dialog gets rotated 180°
+            // above when opened from the top badge, which would otherwise
+            // flip this order too - so swap it here first, to cancel that
+            // out and keep each bubble next to its actual player.
+            children: widget.inverted
+                ? [
+                    _buildBubble(widget.players[0]),
+                    const SizedBox(height: 28),
+                    _buildBubble(widget.players[1]),
+                  ]
+                : [
+                    _buildBubble(widget.players[1]),
+                    const SizedBox(height: 28),
+                    _buildBubble(widget.players[0]),
+                  ],
+          ),
         ),
       ),
     );

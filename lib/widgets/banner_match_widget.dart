@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:math' as math;
+import 'dart:ui';
 
 import 'package:fab_dracailles/core/data/fab_heroes.dart';
 import 'package:fab_dracailles/core/utils/localization_util.dart';
@@ -45,8 +47,6 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
   bool _timerPause = false;
 
   OverlayEntry? Entry;
-  final GlobalKey _logoKey = GlobalKey();
-  final LayerLink _logoLink = LayerLink();
 
   final List<Color> _colorsToSelect = ThemeColors.colorsPlayerGame;
 
@@ -107,6 +107,47 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
     });
   }
 
+  /// Like [_applyMatchType], but also carries heroes over to the new
+  /// format - only used for an explicit pick from the settings dropdown,
+  /// not [_syncMatchTypeToHeroes]'s own call (that one is already reacting
+  /// to a hero pick, so converting heroes there would fight the choice the
+  /// user just made).
+  void _applyMatchTypeFromSettings(MatchTypeEnum value) {
+    _applyMatchType(value);
+    _convertHeroesForFormat(value);
+  }
+
+  /// Carries each player's hero over to its counterpart in the other age
+  /// group when switching directly to Classic Constructed or Silver Age -
+  /// e.g. picking SAGE shouldn't leave an Adult hero selected, and vice
+  /// versa. Draft/Sealed are left alone, there's no clear convention there.
+  /// Runs after _applyMatchType's resetGame() so this life/hero write is
+  /// the one that sticks.
+  void _convertHeroesForFormat(MatchTypeEnum value) {
+    if (value != MatchTypeEnum.sage &&
+        value != MatchTypeEnum.classicConstructed) {
+      return;
+    }
+    final wantsYoung = value == MatchTypeEnum.sage;
+    var changed = false;
+    for (final player in widget.players) {
+      final hero = player.hero;
+      if (hero == null) continue;
+      if (fabHeroesYoung.contains(hero) == wantsYoung) continue;
+      final counterpart = findCrossFormatCounterpart(hero);
+      if (counterpart == null) continue;
+      player.hero = counterpart;
+      player.life = counterpart.life;
+      changed = true;
+      // widget.setPlayers() below only persists life (see match_screen.dart's
+      // _setPlayers) - without this, the OLD hero would still be the one
+      // reloaded after an app restart, even though the life total shown
+      // right now already matches the new one.
+      savePlayerHero(player.index, counterpart);
+    }
+    if (changed) widget.setPlayers(widget.players);
+  }
+
   /// Switches the match between Classic Constructed and Silver Age/Young
   /// based on whether EITHER player currently has a Young hero - not just
   /// whichever one was just picked, so picking an Adult hero for one
@@ -129,105 +170,146 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
     widget.setPlayers(widget.players);
   }
 
-  Future<void> _rollDie() async {
-    int? rolledNumber = _roll(_dieSides);
+  Future<void> _rollDie({required bool inverted}) async {
+    // Waits for an explicit tap instead of rolling as soon as the dialog
+    // opens. `rolling` is tracked separately from `rolledNumber` so the
+    // brief gap while a reroll "spins" doesn't look like the die was reset
+    // back to its never-been-rolled state (that button flashing back on
+    // for half a second looked like a bug).
+    int? rolledNumber;
+    bool rolling = false;
+    int rollTick = 0;
+
     await showDialog(
       context: context,
       builder: (context) {
         return StatefulBuilder(builder: (context, setModalState) {
-          return AlertDialog(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(context.translate('game.die.dieRoll',
-                    translationParams: {"sides": _dieSides.toString()})),
-                const Icon(Icons.casino, color: ThemeColors.primary),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DropdownButtonFormField<int>(
-                  initialValue: _dieSides,
-                  dropdownColor: Colors.white,
-                  focusColor: Colors.white,
-                  decoration: InputDecoration(
-                    labelText: context.translate('game.die.dieType'),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-                    filled: true,
-                    fillColor: Colors.grey[100],
-                  ),
-                  items: [2, 3, 4, 5, 6].map((sides) {
-                    return DropdownMenuItem(
-                      value: sides,
-                      child: Text("d$sides"),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() => _dieSides = value);
-                      setModalState(() => rolledNumber = null);
+          void startRoll() {
+            setModalState(() {
+              rolling = true;
+              rollTick++;
+            });
+            Future.delayed(const Duration(milliseconds: 500), () {
+              setModalState(() {
+                rolledNumber = _roll(_dieSides);
+                rolling = false;
+              });
+            });
+          }
 
-                      Future.delayed(const Duration(milliseconds: 500), () {
-                        setModalState(() {
-                          rolledNumber = _roll(value);
-                        });
-                      });
-                    }
-                  },
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  context.translate('game.die.dieRolled'),
-                  style: const TextStyle(fontSize: 16),
-                ),
-                const SizedBox(height: 8),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  transitionBuilder: (child, animation) =>
-                      ScaleTransition(scale: animation, child: child),
-                  child: Text(
-                    "${rolledNumber ?? '-'}",
-                    key: ValueKey(rolledNumber),
-                    style: const TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.bold,
-                      color: ThemeColors.primary,
-                    ),
+          return Transform.rotate(
+            angle: inverted ? math.pi : 0,
+            child: AlertDialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              title: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(context.translate('game.die.dieRoll',
+                      translationParams: {"sides": _dieSides.toString()})),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    color: Colors.grey,
+                    onPressed: () => Navigator.of(context).pop(),
                   ),
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.replay),
-                  label: Text(context.translate('game.die.rollAgain')),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: ThemeColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                  onPressed: () {
-                    setModalState(() => rolledNumber = null);
-
-                    Future.delayed(const Duration(milliseconds: 500), () {
-                      setModalState(() {
-                        rolledNumber = _roll(_dieSides);
-                      });
-                    });
-                  },
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(context.translate('common.ok')),
+                ],
               ),
-            ],
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<int>(
+                    initialValue: _dieSides,
+                    dropdownColor: Colors.white,
+                    focusColor: Colors.white,
+                    decoration: InputDecoration(
+                      labelText: context.translate('game.die.dieType'),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 12),
+                      filled: true,
+                      fillColor: Colors.grey[100],
+                    ),
+                    items: [2, 3, 4, 5, 6].map((sides) {
+                      return DropdownMenuItem(
+                        value: sides,
+                        child: Text("d$sides"),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() => _dieSides = value);
+                        // Back to the "Lancer le dé" button instead of
+                        // auto-rolling the new die type.
+                        setModalState(() => rolledNumber = null);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  if (rolling)
+                    TweenAnimationBuilder<double>(
+                      key: ValueKey(rollTick),
+                      tween: Tween(begin: 0, end: 4 * math.pi),
+                      duration: const Duration(milliseconds: 500),
+                      curve: Curves.easeOut,
+                      builder: (context, angle, child) => Transform.rotate(
+                        angle: angle,
+                        child: child,
+                      ),
+                      child: const Icon(
+                        Icons.casino,
+                        size: 48,
+                        color: ThemeColors.primary,
+                      ),
+                    )
+                  else if (rolledNumber == null)
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.casino),
+                      label: Text(context.translate('game.die.rollDie')),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: ThemeColors.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: startRoll,
+                    )
+                  else ...[
+                    Text(
+                      context.translate('game.die.dieRolled'),
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(height: 8),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      transitionBuilder: (child, animation) =>
+                          ScaleTransition(scale: animation, child: child),
+                      child: Text(
+                        "$rolledNumber",
+                        key: ValueKey(rolledNumber),
+                        style: const TextStyle(
+                          fontSize: 48,
+                          fontWeight: FontWeight.bold,
+                          color: ThemeColors.primary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.replay),
+                      label: Text(context.translate('game.die.rollAgain')),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: ThemeColors.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: startRoll,
+                    ),
+                  ],
+                ],
+              ),
+            ),
           );
         });
       },
@@ -242,7 +324,7 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
       player.hero?.name ??
       "${context.translate('player.entityName')} ${player.index + 1}";
 
-  void showHistory() {
+  void showHistory({required bool inverted}) {
     List<HistoryEntry> player0History = widget.history
         .where((entry) => entry.player == widget.players[0])
         .toList();
@@ -252,240 +334,294 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
 
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        insetPadding: EdgeInsets.zero,
-        backgroundColor: Colors.transparent,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.9),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                spreadRadius: 5,
-                blurRadius: 10,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    _playerLabel(context, widget.players[0]),
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: widget.players[0].color,
+      builder: (context) => Transform.rotate(
+        angle: inverted ? math.pi : 0,
+        child: Dialog(
+          insetPadding: EdgeInsets.zero,
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+            decoration: BoxDecoration(
+              // Opaque - a translucent background let the match screen
+              // (both players' hero art at once) bleed through underneath,
+              // which doesn't line up with this dialog's own left/right
+              // split and just looked like one hero spilling into the
+              // other's column.
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  spreadRadius: 5,
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _playerLabel(context, widget.players[0]),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: widget.players[0].color,
+                      ),
                     ),
-                  ),
-                  Text(
-                    _playerLabel(context, widget.players[1]),
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: widget.players[1].color,
+                    Text(
+                      _playerLabel(context, widget.players[1]),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: widget.players[1].color,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
+                  ],
+                ),
+                const SizedBox(height: 16),
 
-              Expanded(
-                flex: 1,
-                child: SingleChildScrollView(
-                  child: Row(
-                    children: [
-                      // Historique du joueur 0
-                      Expanded(
-                        flex: 1,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: player0History.map((entry) {
-                            return Padding(
+                Expanded(
+                  flex: 1,
+                  child: SingleChildScrollView(
+                    child: IntrinsicHeight(
+                      // Row centers shorter children by default - with one
+                      // history longer than the other, that pushed the
+                      // shorter column's numbers down instead of lining up
+                      // both at the top. Stretching both to the same
+                      // (tallest) height keeps them top-aligned and gives
+                      // both tinted backgrounds the same height too.
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Historique du joueur 0 - fond teinté de sa propre
+                          // couleur, pour que son côté reste clairement le
+                          // sien et ne se mélange pas avec l'autre colonne.
+                          Expanded(
+                            flex: 1,
+                            child: Container(
                               padding:
                                   const EdgeInsets.symmetric(vertical: 8.0),
-                              child: Text(
-                                entry.lifePoints.toString(),
-                                style: TextStyle(
-                                  fontSize:
-                                      entry == player0History.last ? 24 : 16,
-                                  color: widget.players[0].color,
-                                ),
+                              decoration: BoxDecoration(
+                                color: widget.players[0].color
+                                    .withValues(alpha: 0.08),
+                                borderRadius: const BorderRadius.horizontal(
+                                    left: Radius.circular(12)),
                               ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                      Container(
-                        width: 1,
-                        color: Colors.grey.shade400,
-                      ),
-                      // Historique du joueur 1
-                      Expanded(
-                        flex: 1,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: player1History.map((entry) {
-                            return Padding(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: player0History.map((entry) {
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 8.0),
+                                    child: Text(
+                                      entry.lifePoints.toString(),
+                                      style: TextStyle(
+                                        fontSize: entry == player0History.last
+                                            ? 24
+                                            : 16,
+                                        color: widget.players[0].color,
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ),
+                          Container(
+                            width: 1,
+                            color: Colors.grey.shade400,
+                          ),
+                          // Historique du joueur 1 - idem, teinté de sa
+                          // propre couleur.
+                          Expanded(
+                            flex: 1,
+                            child: Container(
                               padding:
                                   const EdgeInsets.symmetric(vertical: 8.0),
-                              child: Text(
-                                entry.lifePoints.toString(),
-                                style: TextStyle(
-                                  fontSize:
-                                      entry == player1History.last ? 24 : 16,
-                                  color: widget.players[1].color,
-                                ),
+                              decoration: BoxDecoration(
+                                color: widget.players[1].color
+                                    .withValues(alpha: 0.08),
+                                borderRadius: const BorderRadius.horizontal(
+                                    right: Radius.circular(12)),
                               ),
-                            );
-                          }).toList(),
-                        ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: player1History.map((entry) {
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 8.0),
+                                    child: Text(
+                                      entry.lifePoints.toString(),
+                                      style: TextStyle(
+                                        fontSize: entry == player1History.last
+                                            ? 24
+                                            : 16,
+                                        color: widget.players[1].color,
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // Bouton de fermeture
-              ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(),
-                style: ElevatedButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 12, horizontal: 40),
-                  backgroundColor: ThemeColors.primary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
+                // Bouton de fermeture
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 12, horizontal: 40),
+                    backgroundColor: ThemeColors.primary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  child: Text(
+                    context.translate('common.cancel'),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-                child: Text(
-                  context.translate('common.cancel'),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  void showSettings() {
+  void showSettings({required bool inverted}) {
     showDialog(
       context: context,
       builder: (context) {
         return StatefulBuilder(builder: (context, setModalState) {
-          return AlertDialog(
-              scrollable: true,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              insetPadding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-              content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.settings, color: Colors.black54),
-                        const SizedBox(width: 10),
-                        Text(
-                          context.translate('game.settings'),
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+          return Transform.rotate(
+              angle: inverted ? math.pi : 0,
+              child: AlertDialog(
+                scrollable: true,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                insetPadding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.settings, color: Colors.black54),
+                          const SizedBox(width: 10),
+                          Text(
+                            context.translate('game.settings'),
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const Divider(
-                      height: 25,
-                      color: ThemeColors.primary,
-                    ),
-
-                    // Type de match
-                    Text(
-                      context.translate('game.matchType'),
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<MatchTypeEnum>(
-                      initialValue: widget.matchType.type,
-                      dropdownColor: Colors.white,
-                      focusColor: Colors.white,
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Colors.grey[100],
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        contentPadding:
-                            const EdgeInsets.symmetric(horizontal: 12),
+                        ],
                       ),
-                      items: MatchTypeEnum.values.map((matchType) {
-                        return DropdownMenuItem(
-                          value: matchType,
-                          child: Text(matchType.displayName),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          _applyMatchType(value);
-                          Navigator.of(context).pop();
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 16),
+                      const Divider(
+                        height: 25,
+                        color: ThemeColors.primary,
+                      ),
 
-                    // Joueur 1
-                    Text(
-                      "${context.translate('player.entityName')} 1",
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildPlayerTile(widget.players[0], 0, setModalState),
-                    const SizedBox(height: 16),
-                    // Joueur 2
-                    Text(
-                      "${context.translate('player.entityName')} 2",
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildPlayerTile(widget.players[1], 1, setModalState),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          child: Text(context.translate('common.cancel')),
+                      // Type de match
+                      Text(
+                        context.translate('game.matchType'),
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<MatchTypeEnum>(
+                        initialValue: widget.matchType.type,
+                        dropdownColor: Colors.white,
+                        focusColor: Colors.white,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.grey[100],
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          contentPadding:
+                              const EdgeInsets.symmetric(horizontal: 12),
                         ),
-                      ],
-                    )
-                  ]));
+                        items: MatchTypeEnum.values.map((matchType) {
+                          return DropdownMenuItem(
+                            value: matchType,
+                            child: Text(matchType.displayName),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            _applyMatchTypeFromSettings(value);
+                            Navigator.of(context).pop();
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Joueur 1
+                      Text(
+                        "${context.translate('player.entityName')} 1",
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildPlayerTile(widget.players[0], setModalState,
+                          inverted: inverted),
+                      const SizedBox(height: 16),
+                      // Joueur 2
+                      Text(
+                        "${context.translate('player.entityName')} 2",
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildPlayerTile(widget.players[1], setModalState,
+                          inverted: inverted),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: Text(context.translate('common.cancel')),
+                          ),
+                        ],
+                      )
+                    ]),
+              ));
         });
       },
     );
   }
 
-  Widget _buildPlayerTile(GamePlayer player, int index,
-      void Function(void Function()) setModalState) {
+  Widget _buildPlayerTile(
+      GamePlayer player, void Function(void Function()) setModalState,
+      {required bool inverted}) {
     return GestureDetector(
       onTap: () async {
-        final idx = widget.players.indexWhere((p) => p.index == index);
+        // player.index is a stable identity, not a screen position - it
+        // survives reversePlayers() reordering widget.players, unlike a
+        // plain 0/1 passed in from the call site would (that was a real
+        // bug: color/hero/life got saved and restored under the wrong
+        // player after a reversal).
+        final idx = widget.players.indexWhere((p) => p.index == player.index);
         if (idx == -1) return;
         await Navigator.of(context).push(MaterialPageRoute(
           builder: (_) => HeroColorPickerScreen(
             colors: _colorsToSelect,
+            inverted: inverted,
             startOnHeroTab: widget.players[idx].hero != null,
             // A hero already picked wins; otherwise default to whichever
             // the match is already running as (so a SAGE match suggests
@@ -498,15 +634,15 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
               widget.players[idx].hero = null;
               widget.setPlayers(widget.players);
               _syncMatchTypeToHeroes();
-              await savePlayerColor(index, color);
-              await savePlayerHero(index, null);
+              await savePlayerColor(player.index, color);
+              await savePlayerHero(player.index, null);
             },
             onHeroSelected: (hero, isYoung) async {
               widget.players[idx].hero = hero;
               widget.players[idx].life = hero.life;
               widget.setPlayers(widget.players);
               _syncMatchTypeToHeroes();
-              await savePlayerHero(index, hero);
+              await savePlayerHero(player.index, hero);
             },
           ),
         ));
@@ -580,12 +716,14 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
     }
   }
 
-  void _openRadialMenu() {
+  void _openRadialMenu({required bool inverted}) {
     if (Entry != null) return;
     final overlay = Overlay.of(context);
 
-    // Position du logo pour centrer la roue
-    final box = _logoKey.currentContext?.findRenderObject() as RenderBox?;
+    // Always fans out from the middle of the match area, regardless of
+    // which edge badge was tapped - a badge pinned to an edge doesn't have
+    // room around it for a centered wheel of icons.
+    final box = context.findRenderObject() as RenderBox?;
     if (box == null) return;
 
     final size = box.size;
@@ -610,13 +748,14 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                 child: RadialMenu(
                   center: center,
                   radius: 100,
+                  inverted: inverted,
                   items: [
                     RadialAction(
                       icon: Icons.settings,
                       tooltip: context.translate('game.matchType'),
                       onTap: () {
                         _closeRadialMenu();
-                        showSettings();
+                        showSettings(inverted: inverted);
                       },
                     ),
                     RadialAction(
@@ -624,7 +763,7 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                       tooltip: context.translate('game.history'),
                       onTap: () {
                         _closeRadialMenu();
-                        showHistory();
+                        showHistory(inverted: inverted);
                       },
                     ),
                     RadialAction(
@@ -632,7 +771,7 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                       tooltip: context.translate('game.die.rollDie'),
                       onTap: () {
                         _closeRadialMenu();
-                        _rollDie();
+                        _rollDie(inverted: inverted);
                       },
                     ),
                     RadialAction(
@@ -646,9 +785,9 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                             players: widget.players,
                             colors: _colorsToSelect,
                             matchType: widget.matchType,
-                            setPlayers: (players) =>
-                                widget.setPlayers(players),
+                            setPlayers: (players) => widget.setPlayers(players),
                             syncMatchType: _syncMatchTypeToHeroes,
+                            inverted: inverted,
                           ),
                         );
                       },
@@ -728,123 +867,141 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
     Entry = null;
   }
 
+  Widget _buildLogoButton({
+    required double diameter,
+    required double timerFontSize,
+    required bool inverted,
+  }) {
+    return Transform.rotate(
+      angle: inverted ? math.pi : 0,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _openRadialMenu(inverted: inverted),
+        child: Container(
+          width: diameter,
+          height: diameter,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white,
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Logo centré
+              Center(
+                child: Image.asset(
+                  'assets/images/logo_dracailles_full.png',
+                  height: diameter * 0.9,
+                  fit: BoxFit.contain,
+                ),
+              ),
+
+              // Compteur en overlay (bas du cercle) - l'état pause a sa
+              // propre grande superposition au milieu de l'écran à la
+              // place d'une petite icône ici.
+              if (_timerDuration != _timeLeft)
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        child: Text(
+                          '${_timeLeft ~/ 60}:${(_timeLeft % 60).toString().padLeft(2, '0')}',
+                          style: TextStyle(
+                            fontSize: timerFontSize,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            shadows: const [
+                              Shadow(
+                                blurRadius: 2,
+                                color: Colors.black45,
+                                offset: Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
     final bool isCompact = media.size.width < 360;
-    final double circleDiameter = isCompact ? 140.0 : 160.0;
+    // Back to roughly the original single-badge size, now that each one is
+    // pinned to a screen edge instead of sitting over the hero art.
+    final double circleDiameter = isCompact ? 100.0 : 120.0;
     final double timerFontSize = circleDiameter * 0.16;
 
     return SizedBox.expand(
       child: Stack(
         fit: StackFit.expand,
         children: [
+          // Pinned to the left/right edges instead of the horizontal center,
+          // since hero art is usually centered on the card - this keeps
+          // both badges clear of the face no matter the hero.
           Align(
-            alignment: Alignment.center,
+            alignment: Alignment.centerLeft,
             child: Padding(
-              padding: const EdgeInsets.only(top: 12.0),
-              child: CompositedTransformTarget(
-                link: _logoLink,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: _openRadialMenu,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        key: _logoKey,
-                        width: circleDiameter,
-                        height: circleDiameter,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
+              padding: const EdgeInsets.only(left: 8.0),
+              child: _buildLogoButton(
+                diameter: circleDiameter,
+                timerFontSize: timerFontSize,
+                inverted: true,
+              ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: _buildLogoButton(
+                diameter: circleDiameter,
+                timerFontSize: timerFontSize,
+                inverted: false,
+              ),
+            ),
+          ),
+          // Big, obvious paused state instead of the small icon that used
+          // to sit next to the timer - tapping it resumes, same as the
+          // timer action in the radial menu.
+          if (_timerPause && _timerStarted)
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: toggleTimer,
+                child: ClipRect(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 2.5, sigmaY: 2.5),
+                    child: Container(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      child: const Center(
+                        child: Icon(
+                          Icons.pause_circle_filled,
                           color: Colors.white,
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            // Logo centré
-                            Center(
-                              child: Image.asset(
-                                'assets/images/logo_dracailles_full.png',
-                                height: circleDiameter * 0.9,
-                                fit: BoxFit.contain,
-                              ),
-                            ),
-
-                            // Compteur en overlay (bas du cercle)
-                            // Overlay compteur / pause
-                            if (_timerDuration != _timeLeft ||
-                                (_timerPause && _timerStarted))
-                              Align(
-                                alignment: Alignment.bottomCenter,
-                                child: Padding(
-                                  padding: const EdgeInsets.only(bottom: 8.0),
-                                  child: DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      color:
-                                          Colors.black.withValues(alpha: 0.6),
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 10, vertical: 4),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          // Affiche le compteur si temps écoulé
-                                          if (_timerDuration != _timeLeft)
-                                            Text(
-                                              '${_timeLeft ~/ 60}:${(_timeLeft % 60).toString().padLeft(2, '0')}',
-                                              style: TextStyle(
-                                                fontSize: timerFontSize,
-                                                fontWeight: FontWeight.w700,
-                                                color: Colors.white,
-                                                shadows: const [
-                                                  Shadow(
-                                                    blurRadius: 2,
-                                                    color: Colors.black45,
-                                                    offset: Offset(0, 1),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-
-                                          // Espace entre compteur et icône si les deux sont affichés
-                                          if (_timerDuration != _timeLeft &&
-                                              _timerPause &&
-                                              _timerStarted)
-                                            const SizedBox(width: 8),
-
-                                          // Affiche l’icône pause si conditions remplies
-                                          if (_timerPause && _timerStarted)
-                                            const Icon(
-                                              Icons.pause_circle_filled,
-                                              color: Colors.white,
-                                              size: 20,
-                                              shadows: [
-                                                Shadow(
-                                                  blurRadius: 2,
-                                                  color: Colors.black45,
-                                                  offset: Offset(0, 1),
-                                                ),
-                                              ],
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
+                          size: 110,
                         ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );

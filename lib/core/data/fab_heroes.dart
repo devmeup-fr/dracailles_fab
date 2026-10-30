@@ -48,6 +48,53 @@ class FabHero {
   bool get isFullArt => !fabHeroesBorderedAssets.contains(asset);
 }
 
+/// Best-effort match for [hero]'s counterpart in the other age group
+/// ([fabHeroesYoung] for an Adult hero, [fabHeroesAdult] for a Young one) -
+/// used when the match format is switched directly to/from Classic
+/// Constructed and Silver Age, so a selected hero carries over instead of
+/// staying picked in a format it's not legal for.
+///
+/// FaB hero names are "<Character> <Subtitle>" (occasionally a two-word
+/// character name, e.g. "Dr Mortimer", "Ser Boltyn"), so a candidate
+/// matches when its full name's words form a contiguous run within the
+/// other hero's name's words - e.g. "Dash" matches both "Dash Io" and "Dash
+/// Inventor Extraordinaire". When several candidates match, the one with
+/// the fewest extra words wins (closest to a plain name match). Returns
+/// null when nothing matches - some heroes (e.g. Scurv Stowaway) only
+/// exist on one side.
+FabHero? findCrossFormatCounterpart(FabHero hero) {
+  final otherList =
+      fabHeroesAdult.contains(hero) ? fabHeroesYoung : fabHeroesAdult;
+  final heroWords = hero.name.split(' ');
+
+  bool isSubsequence(List<String> shorter, List<String> longer) {
+    for (var start = 0; start <= longer.length - shorter.length; start++) {
+      var allMatch = true;
+      for (var i = 0; i < shorter.length; i++) {
+        if (longer[start + i].toLowerCase() != shorter[i].toLowerCase()) {
+          allMatch = false;
+          break;
+        }
+      }
+      if (allMatch) return true;
+    }
+    return false;
+  }
+
+  FabHero? best;
+  for (final candidate in otherList) {
+    final candidateWords = candidate.name.split(' ');
+    final matches = heroWords.length <= candidateWords.length
+        ? isSubsequence(heroWords, candidateWords)
+        : isSubsequence(candidateWords, heroWords);
+    if (!matches) continue;
+    if (best == null || candidateWords.length < best.name.split(' ').length) {
+      best = candidate;
+    }
+  }
+  return best;
+}
+
 /// Asset filenames (the `FabHero.asset` value, e.g. `'terra.webp'`) of hero
 /// photos under `assets/images/hero_photos/` that use the bordered card
 /// template - a title bar with the hero's printed name near the top of the

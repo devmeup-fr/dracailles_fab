@@ -3,15 +3,15 @@ import 'package:flutter/material.dart';
 /// Crops a fixed fractional window out of an asset image and shows it
 /// cover-fit in its box, without ever touching the image file on disk.
 ///
-/// The hero photos under `assets/images/hero_photos/` are full card scans,
-/// not isolated art, and the set mixes two templates: bordered cards with
-/// a title bar above the art and a rules-text box below it, and full-art
-/// cards with no border where the art reaches the very top edge and only a
-/// name plate sits at the bottom. Plain `BoxFit.cover` centers on the whole
-/// card, cutting into the character's head either way. There's no single
-/// crop that removes a top title bar AND never touches a full-art head, so
-/// `top` defaults to 0 (never crops the top - at worst a bordered card's
-/// title bar peeks in) and only the bottom text/name-plate area is cropped.
+/// The defaults suit full-art hero photos: the art bleeds to every edge
+/// except a thin name plate at the very bottom, which consistently starts
+/// around 85-88% of the image height across samples, so the default
+/// `bottom` clears that with a small margin and trims as little of the art
+/// as possible - cropping more than necessary here forces a tighter zoom
+/// once it's cover-fit into the (usually wider) tile than is actually
+/// needed. Bordered cards need an explicit override instead (see
+/// life_tracker_widget.dart): title bar from 0 to ~12%, then art down to
+/// ~62% before a rules text box, consistent across samples checked.
 ///
 /// This needs the asset's real pixel size (not just the fractions) to crop
 /// without distorting the art: the crop is extracted at native resolution
@@ -26,10 +26,10 @@ class HeroArtCrop extends StatefulWidget {
   const HeroArtCrop({
     super.key,
     required this.assetPath,
-    this.left = 0.05,
+    this.left = 0.0,
     this.top = 0.0,
-    this.right = 0.95,
-    this.bottom = 0.62,
+    this.right = 1.0,
+    this.bottom = 0.86,
   });
 
   @override
@@ -121,6 +121,13 @@ class _HeroArtCropState extends State<HeroArtCrop> {
     return ClipRect(
       child: FittedBox(
         fit: BoxFit.cover,
+        // The tile's own aspect ratio rarely matches the extracted crop's,
+        // so cover still has to cut some of it to fill the tile. Default
+        // (center) alignment would cut that evenly off the top and bottom -
+        // but the head is near the top of the art, not the middle, so
+        // anchoring to the top instead pushes all of that extra cropping
+        // onto the bottom, where it's safe.
+        alignment: Alignment.topCenter,
         child: SizedBox(
           width: artWidth,
           height: artHeight,

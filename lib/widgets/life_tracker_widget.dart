@@ -21,14 +21,6 @@ class LifeTrackerWidget extends StatefulWidget {
 }
 
 class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
-  /// How much of a bordered hero photo's top to crop away so the title
-  /// bar's printed name doesn't show. Eyeballed against several bordered
-  /// photos: the title ribbon (frame + text) consistently ends by ~10-13%
-  /// of the image height, well above where a character's head starts, so
-  /// 0.12 clears the name with a little margin to spare. Full-art photos
-  /// keep the `HeroArtCrop` default of 0 instead (see its doc comment).
-  static const double _borderedTopCrop = 0.12;
-
   Timer? _longPressTimer;
   int _temporaryLifeChange = 0;
   Timer? _temporaryLifeTimer;
@@ -104,17 +96,32 @@ class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
             children: [
               if (widget.gamePlayer.hero != null)
                 Positioned.fill(
-                  child: HeroArtCrop(
-                    assetPath: widget.gamePlayer.hero!.photoPath,
-                    top: widget.gamePlayer.hero!.isFullArt
-                        ? 0.0
-                        : _borderedTopCrop,
-                  ),
+                  // Bordered cards follow a consistent template: title bar
+                  // from 0-~12%, art from there down to ~62% (then a rules
+                  // text box), confirmed across several samples. Full-art
+                  // photos have no title bar and keep art almost to the
+                  // very bottom (HeroArtCrop's own defaults).
+                  child: widget.gamePlayer.hero!.isFullArt
+                      ? HeroArtCrop(
+                          assetPath: widget.gamePlayer.hero!.photoPath)
+                      : HeroArtCrop(
+                          assetPath: widget.gamePlayer.hero!.photoPath,
+                          left: 0.05,
+                          top: 0.12,
+                          right: 0.95,
+                          bottom: 0.62,
+                        ),
                 ),
               if (_temporaryLifeChange != 0)
-                Positioned(
-                  left: 300,
-                  top: 100,
+                // Proportional, not a fixed pixel offset, so it lands in
+                // the same relative spot regardless of screen size. Side
+                // follows the running total's sign, not whichever button
+                // was tapped last - e.g. -1, -1, +1 is still net negative
+                // (-1) so it stays on the left until the total itself goes
+                // positive.
+                Align(
+                  alignment: Alignment(
+                      _temporaryLifeChange < 0 ? -0.6 : 0.6, -0.5),
                   child: Text(
                     (_temporaryLifeChange > 0 ? "+" : "") +
                         _temporaryLifeChange.toString(),
@@ -126,10 +133,17 @@ class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
                   ),
                 ),
               Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Row(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  // The numbers below are a fixed design reference, not
+                  // actual pixel sizes - FittedBox scales the whole row
+                  // uniformly to fill whatever space this tile has, so it
+                  // grows on a tablet and shrinks on a small phone instead
+                  // of overflowing or looking tiny.
+                  child: FittedBox(
+                    fit: BoxFit.contain,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const Padding(
@@ -169,7 +183,7 @@ class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
                         ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
               ),
               Row(
