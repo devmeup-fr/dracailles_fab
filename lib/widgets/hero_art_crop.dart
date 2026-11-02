@@ -13,6 +13,13 @@ import 'package:flutter/material.dart';
 /// life_tracker_widget.dart): title bar from 0 to ~12%, then art down to
 /// ~62% before a rules text box, consistent across samples checked.
 ///
+/// `top` isn't 0: these assets are physical-card scans with rounded
+/// corners, transparent outside that rounding (confirmed up to ~y=27px of
+/// 838 across several samples) - starting the crop right at the top edge
+/// let the player's flat background color peek through in that rounded
+/// shape at both top corners (e.g. Jarl Vetreiði). Clearing just past it
+/// avoids that without visibly affecting the crop.
+///
 /// This needs the asset's real pixel size (not just the fractions) to crop
 /// without distorting the art: the crop is extracted at native resolution
 /// first, then cover-fit into the box as a second, separate, uniform scale.
@@ -27,7 +34,7 @@ class HeroArtCrop extends StatefulWidget {
     super.key,
     required this.assetPath,
     this.left = 0.0,
-    this.top = 0.0,
+    this.top = 0.04,
     this.right = 1.0,
     this.bottom = 0.86,
   });
