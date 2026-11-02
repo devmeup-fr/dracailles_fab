@@ -246,13 +246,6 @@ class _MatchScreenState extends State<MatchScreen>
                   addToHistory(_players[1]);
                 },
               ),
-              // Both tiles anchor their hero art to their own local top
-              // edge (see life_tracker_widget.dart) - for the inverted
-              // (top) player that 180° rotation puts it right at this
-              // seam too, so without this gap the centered menu badge in
-              // BannerMatchWidget sits directly over whichever hero's
-              // face lands closest to the middle of the screen.
-              const SizedBox(height: 100),
               LifeTrackerWidget(
                 gamePlayer: _players[0],
                 onLifeChanged: (amount) {

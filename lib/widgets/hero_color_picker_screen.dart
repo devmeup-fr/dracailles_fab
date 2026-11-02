@@ -134,15 +134,19 @@ class _HeroColorPickerScreenState extends State<HeroColorPickerScreen>
     final heroes = _showYoung ? fabHeroesYoung : fabHeroesAdult;
     final byClass = <FabHeroClass, List<FabHero>>{};
     for (final hero in heroes) {
-      // Multi-class heroes show up under each of their classes.
+      // Multi-class heroes show up once per class they belong to.
       for (final heroClass in hero.heroClasses) {
         byClass.putIfAbsent(heroClass, () => []).add(hero);
       }
     }
     // FabHeroClass's declaration order is the intended display order, not
     // whichever order a class is first met while scanning heroes above.
+    // Sorted by class, but not split into per-class sections below - one
+    // continuous grid, classes just follow each other in it.
     final orderedClasses =
         FabHeroClass.values.where(byClass.containsKey).toList();
+    final heroesInOrder =
+        orderedClasses.expand((heroClass) => byClass[heroClass]!).toList();
 
     return Column(
       children: [
@@ -165,68 +169,68 @@ class _HeroColorPickerScreenState extends State<HeroColorPickerScreen>
           ),
         ),
         Expanded(
-          child: byClass.isEmpty
+          child: heroesInOrder.isEmpty
               ? Center(
                   child: Text(
                     context.translate('player.noHeroes'),
                     style: TextStyle(color: Colors.grey[600]),
                   ),
                 )
-              : ListView(
-                  padding: const EdgeInsets.all(20),
-                  children: orderedClasses.map((heroClass) {
-                    final classHeroes = byClass[heroClass]!;
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                              context.translate(
-                                  'player.heroClass.${heroClass.name}'),
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w600, fontSize: 16)),
-                          const SizedBox(height: 12),
-                          Wrap(
-                            spacing: 16,
-                            runSpacing: 16,
-                            children: classHeroes.map((hero) {
-                              return GestureDetector(
-                                onTap: () {
-                                  widget.onHeroSelected(hero, _showYoung);
-                                  Navigator.of(context).pop();
-                                },
-                                child: SizedBox(
-                                  width: 72,
-                                  child: Column(
-                                    children: [
-                                      CircleAvatar(
-                                        radius: 28,
-                                        backgroundColor: Colors.grey[300],
-                                        backgroundImage:
-                                            AssetImage(hero.thumbnailPath),
-                                        onBackgroundImageError:
-                                            (exception, stackTrace) {},
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        hero.name,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(fontSize: 11),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ),
+              : LayoutBuilder(builder: (context, constraints) {
+                  const horizontalPadding = 20.0;
+                  const spacing = 12.0;
+                  // The bubble shrinks to keep at least 4 columns on any
+                  // screen, rather than keeping a fixed bubble size and
+                  // wrapping down to 3 (or fewer) on a narrow phone.
+                  const idealCellWidth = 84.0;
+                  final availableWidth =
+                      constraints.maxWidth - horizontalPadding * 2;
+                  final crossAxisCount = math.max(
+                      4, (availableWidth / idealCellWidth).floor());
+                  final cellWidth =
+                      (availableWidth - spacing * (crossAxisCount - 1)) /
+                          crossAxisCount;
+                  final avatarRadius = (cellWidth / 2).clamp(18.0, 28.0);
+                  return GridView.builder(
+                    padding: const EdgeInsets.all(horizontalPadding),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      mainAxisSpacing: spacing,
+                      crossAxisSpacing: spacing,
+                      mainAxisExtent: avatarRadius * 2 + 36,
+                    ),
+                    itemCount: heroesInOrder.length,
+                    itemBuilder: (context, index) {
+                      final hero = heroesInOrder[index];
+                      return GestureDetector(
+                        onTap: () {
+                          widget.onHeroSelected(hero, _showYoung);
+                          Navigator.of(context).pop();
+                        },
+                        child: Column(
+                          children: [
+                            CircleAvatar(
+                              radius: avatarRadius,
+                              backgroundColor: Colors.grey[300],
+                              backgroundImage:
+                                  AssetImage(hero.thumbnailPath),
+                              onBackgroundImageError:
+                                  (exception, stackTrace) {},
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              hero.name,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                }),
         ),
       ],
     );

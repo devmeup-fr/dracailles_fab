@@ -935,9 +935,9 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
     final bool isCompact = media.size.width < 360;
-    // A single, smaller badge in the middle - two edge badges (one rotated
-    // for the opposing player) looked like two separate menus and players
-    // kept tapping the wrong one.
+    // A single, smaller badge - two edge badges (one rotated for the
+    // opposing player) looked like two separate menus and players kept
+    // tapping the wrong one.
     final double circleDiameter = isCompact ? 70.0 : 90.0;
     final double timerFontSize = circleDiameter * 0.16;
 
@@ -945,11 +945,19 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
       child: Stack(
         fit: StackFit.expand,
         children: [
+          // Off to the right instead of dead-center: centering it needed
+          // an ugly blank strip between the two tiles just to keep it off
+          // the hero art - hero heads sit more centrally, so the edge is
+          // naturally clearer. The radial menu it opens still fans out
+          // from the middle of the screen regardless (_openRadialMenu).
           Align(
-            alignment: Alignment.center,
-            child: _buildLogoButton(
-              diameter: circleDiameter,
-              timerFontSize: timerFontSize,
+            alignment: Alignment.centerRight,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: _buildLogoButton(
+                diameter: circleDiameter,
+                timerFontSize: timerFontSize,
+              ),
             ),
           ),
           // Big, obvious paused state instead of the small icon that used
