@@ -935,15 +935,16 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
     final bool isCompact = media.size.width < 360;
-    // Back to the original edge-badge size now that it's pinned to the
-    // side again - it no longer sits over the hero art, so there's no
-    // need to keep it small.
-    final double circleDiameter = isCompact ? 100.0 : 120.0;
-    final double timerFontSize = circleDiameter * 0.16;
     // Only needs to dodge the edge when there's hero art to dodge - with
     // both players on a plain color there's nothing for it to cover, so it
     // stays dead-center instead of looking randomly off to one side.
     final bool hasAnyHero = widget.players.any((player) => player.hero != null);
+    // Centered (no hero art around it) can go back to the bigger size;
+    // pinned to the edge over a hero's face stays at the smaller one.
+    final double circleDiameter = hasAnyHero
+        ? (isCompact ? 100.0 : 120.0)
+        : (isCompact ? 140.0 : 160.0);
+    final double timerFontSize = circleDiameter * 0.16;
 
     return SizedBox.expand(
       child: Stack(
