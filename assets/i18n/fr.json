@@ -22,6 +22,7 @@
         "hero": "Héros",
         "heroAdult": "Adult",
         "heroYoung": "Young",
+        "livingLegend": "Living Legend",
         "noHeroes": "Aucun héros disponible pour l'instant",
         "heroClass": {
             "assassin": "Assassin",

@@ -46,6 +46,10 @@ class FabHero {
   /// top, art in the middle, rules-text box below). See
   /// [fabHeroesBorderedAssets] for how this is determined.
   bool get isFullArt => !fabHeroesBorderedAssets.contains(asset);
+
+  /// Whether this is one of the Living Legend heroes - shown in their own
+  /// section below the rest of the picker rather than mixed in with them.
+  bool get isLivingLegend => fabHeroesLivingLegendAssets.contains(asset);
 }
 
 /// Best-effort match for [hero]'s counterpart in the other age group
@@ -208,6 +212,41 @@ const Set<String> fabHeroesBorderedAssets = {
   'zane-broadly-beloved.webp',
   'zyggy-starlight.webp',
   'zyggy.webp',
+};
+
+/// Asset filenames of Adult heroes that have reached Living Legend status -
+/// retired from Classic Constructed competitive play. Shown in their own
+/// section at the bottom of the hero picker instead of among the regular
+/// class-sorted heroes, since they're a format-legality distinction, not a
+/// class.
+const Set<String> fabHeroesLivingLegendAssets = {
+  'arakni-marionette.webp',
+  'aurora-shooting-star.webp',
+  'azalea-ace-in-the-hole.webp',
+  'bravo-star-of-the-show.webp',
+  'briar-warden-of-thorns.webp',
+  'chane-bound-by-shadow.webp',
+  'cindra-dracai-of-retribution.webp',
+  'dash-io.webp',
+  'dash-inventor-extraordinaire.webp',
+  'dromai-ash-artist.webp',
+  'enigma-ledger-of-ancestry.webp',
+  'fai-rising-rebellion.webp',
+  'florian-rotwood-harbinger.webp',
+  'iyslander-stormbind.webp',
+  'kayo-armed-and-dangerous.webp',
+  'kano-dracai-of-aether.webp',
+  'kassai-of-the-golden-sand.webp',
+  'lexi-livewire.webp',
+  'nuu-alluring-desire.webp',
+  'oldhim-grandfather-of-eternity.webp',
+  'oscilio-constella-intelligence.webp',
+  'prism-awakener-of-sol.webp',
+  'prism-sculptor-of-arc-light.webp',
+  'verdance-thorn-of-the-rose.webp',
+  'victor-goldmane-high-and-mighty.webp',
+  'viserai-rune-blood.webp',
+  'zen-tamer-of-purpose.webp',
 };
 
 const List<FabHero> fabHeroesAdult = [

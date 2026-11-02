@@ -142,11 +142,18 @@ class _HeroColorPickerScreenState extends State<HeroColorPickerScreen>
     // FabHeroClass's declaration order is the intended display order, not
     // whichever order a class is first met while scanning heroes above.
     // Sorted by class, but not split into per-class sections below - one
-    // continuous grid, classes just follow each other in it.
+    // continuous grid, classes just follow each other in it. Living Legend
+    // heroes are pulled out into their own section below instead - that's
+    // a format-legality status, not a class, so grouping them in with the
+    // rest wouldn't mean anything.
     final orderedClasses =
         FabHeroClass.values.where(byClass.containsKey).toList();
     final heroesInOrder =
         orderedClasses.expand((heroClass) => byClass[heroClass]!).toList();
+    final livingLegendHeroes =
+        heroesInOrder.where((hero) => hero.isLivingLegend).toList();
+    final regularHeroes =
+        heroesInOrder.where((hero) => !hero.isLivingLegend).toList();
 
     return Column(
       children: [
@@ -191,48 +198,83 @@ class _HeroColorPickerScreenState extends State<HeroColorPickerScreen>
                       (availableWidth - spacing * (crossAxisCount - 1)) /
                           crossAxisCount;
                   final avatarRadius = (cellWidth / 2).clamp(18.0, 28.0);
-                  return GridView.builder(
+                  return ListView(
                     padding: const EdgeInsets.all(horizontalPadding),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: crossAxisCount,
-                      mainAxisSpacing: spacing,
-                      crossAxisSpacing: spacing,
-                      mainAxisExtent: avatarRadius * 2 + 36,
-                    ),
-                    itemCount: heroesInOrder.length,
-                    itemBuilder: (context, index) {
-                      final hero = heroesInOrder[index];
-                      return GestureDetector(
-                        onTap: () {
-                          widget.onHeroSelected(hero, _showYoung);
-                          Navigator.of(context).pop();
-                        },
-                        child: Column(
-                          children: [
-                            CircleAvatar(
-                              radius: avatarRadius,
-                              backgroundColor: Colors.grey[300],
-                              backgroundImage:
-                                  AssetImage(hero.thumbnailPath),
-                              onBackgroundImageError:
-                                  (exception, stackTrace) {},
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              hero.name,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(fontSize: 11),
-                            ),
-                          ],
+                    children: [
+                      if (regularHeroes.isNotEmpty)
+                        _buildHeroGrid(
+                          regularHeroes,
+                          crossAxisCount: crossAxisCount,
+                          spacing: spacing,
+                          avatarRadius: avatarRadius,
                         ),
-                      );
-                    },
+                      if (livingLegendHeroes.isNotEmpty) ...[
+                        const SizedBox(height: 20),
+                        Text(
+                          context.translate('player.livingLegend'),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w600, fontSize: 16),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildHeroGrid(
+                          livingLegendHeroes,
+                          crossAxisCount: crossAxisCount,
+                          spacing: spacing,
+                          avatarRadius: avatarRadius,
+                        ),
+                      ],
+                    ],
                   );
                 }),
         ),
       ],
+    );
+  }
+
+  Widget _buildHeroGrid(
+    List<FabHero> heroes, {
+    required int crossAxisCount,
+    required double spacing,
+    required double avatarRadius,
+  }) {
+    return GridView.builder(
+      padding: EdgeInsets.zero,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        mainAxisSpacing: spacing,
+        crossAxisSpacing: spacing,
+        mainAxisExtent: avatarRadius * 2 + 36,
+      ),
+      itemCount: heroes.length,
+      itemBuilder: (context, index) {
+        final hero = heroes[index];
+        return GestureDetector(
+          onTap: () {
+            widget.onHeroSelected(hero, _showYoung);
+            Navigator.of(context).pop();
+          },
+          child: Column(
+            children: [
+              CircleAvatar(
+                radius: avatarRadius,
+                backgroundColor: Colors.grey[300],
+                backgroundImage: AssetImage(hero.thumbnailPath),
+                onBackgroundImageError: (exception, stackTrace) {},
+              ),
+              const SizedBox(height: 4),
+              Text(
+                hero.name,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 11),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

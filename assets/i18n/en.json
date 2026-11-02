@@ -3,6 +3,7 @@
         "appTitle": "Les Dracailles Fab Counter"
     },
     "player": {
+        "livingLegend": "Living Legend",
         "heroClass": {
             "assassin": "Assassin",
             "brute": "Brute",
