@@ -763,7 +763,7 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                       },
                     ),
                     RadialAction(
-                      icon: Icons.menu_book,
+                      icon: Icons.show_chart,
                       tooltip: context.translate('game.history'),
                       onTap: () {
                         _closeRadialMenu();
