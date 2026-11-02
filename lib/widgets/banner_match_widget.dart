@@ -935,10 +935,10 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
     final bool isCompact = media.size.width < 360;
-    // A single, smaller badge - two edge badges (one rotated for the
-    // opposing player) looked like two separate menus and players kept
-    // tapping the wrong one.
-    final double circleDiameter = isCompact ? 70.0 : 90.0;
+    // Back to the original edge-badge size now that it's pinned to the
+    // side again - it no longer sits over the hero art, so there's no
+    // need to keep it small.
+    final double circleDiameter = isCompact ? 140.0 : 160.0;
     final double timerFontSize = circleDiameter * 0.16;
 
     return SizedBox.expand(
