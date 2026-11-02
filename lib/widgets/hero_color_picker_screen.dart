@@ -132,24 +132,11 @@ class _HeroColorPickerScreenState extends State<HeroColorPickerScreen>
 
   Widget _buildHeroPicker(BuildContext context) {
     final heroes = _showYoung ? fabHeroesYoung : fabHeroesAdult;
-    final byClass = <FabHeroClass, List<FabHero>>{};
-    for (final hero in heroes) {
-      // Multi-class heroes show up once per class they belong to.
-      for (final heroClass in hero.heroClasses) {
-        byClass.putIfAbsent(heroClass, () => []).add(hero);
-      }
-    }
-    // FabHeroClass's declaration order is the intended display order, not
-    // whichever order a class is first met while scanning heroes above.
-    // Sorted by class, but not split into per-class sections below - one
-    // continuous grid, classes just follow each other in it. Living Legend
-    // heroes are pulled out into their own section below instead - that's
-    // a format-legality status, not a class, so grouping them in with the
-    // rest wouldn't mean anything.
-    final orderedClasses =
-        FabHeroClass.values.where(byClass.containsKey).toList();
-    final heroesInOrder =
-        orderedClasses.expand((heroClass) => byClass[heroClass]!).toList();
+    // Alphabetical is easier to scan for a specific hero than grouping by
+    // class - Living Legend heroes are still pulled into their own section
+    // below, since that's a format-legality status rather than a class.
+    final heroesInOrder = heroes.toList()
+      ..sort((a, b) => a.name.compareTo(b.name));
     final livingLegendHeroes =
         heroesInOrder.where((hero) => hero.isLivingLegend).toList();
     final regularHeroes =
