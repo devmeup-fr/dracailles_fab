@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:fab_dracailles/theme/colors.dart';
+import 'package:fab_dracailles/theme/fantasy_theme.dart';
 import 'package:flutter/material.dart';
 
 class RadialAction {
@@ -158,21 +158,32 @@ class _RadialIconButton extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       waitDuration: const Duration(milliseconds: 350),
-      child: Material(
-        color: Colors.white,
-        elevation: 4,
-        shape: const CircleBorder(),
-        child: InkWell(
-          onTap: onTap,
-          customBorder: const CircleBorder(),
-          child: SizedBox(
-            width: 56,
-            height: 56,
+      child: Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: FantasyPalette.obsidianLight,
+          border: Border.all(color: FantasyPalette.gold, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.4),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Material(
+          type: MaterialType.transparency,
+          shape: const CircleBorder(),
+          child: InkWell(
+            onTap: onTap,
+            customBorder: const CircleBorder(),
             child: Center(
               child: Icon(
                 icon,
-                size: 28,
-                color: ThemeColors.primary,
+                size: 26,
+                color: FantasyPalette.gold,
               ),
             ),
           ),

@@ -9,6 +9,7 @@ import 'package:fab_dracailles/models/game_player_model.dart';
 import 'package:fab_dracailles/models/match_type_model.dart';
 import 'package:fab_dracailles/screens/match_screen.dart';
 import 'package:fab_dracailles/theme/colors.dart';
+import 'package:fab_dracailles/theme/fantasy_theme.dart';
 import 'package:fab_dracailles/widgets/devmeup_widget.dart';
 import 'package:fab_dracailles/widgets/hero_color_picker_screen.dart';
 import 'package:fab_dracailles/widgets/players_appearance_screen.dart';
@@ -198,16 +199,22 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
           return Transform.rotate(
             angle: inverted ? math.pi : 0,
             child: AlertDialog(
+              backgroundColor: FantasyPalette.obsidianLight,
+              surfaceTintColor: Colors.transparent,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
+                  borderRadius: BorderRadius.circular(16),
+                  side: const BorderSide(color: FantasyPalette.gold)),
               title: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(context.translate('game.die.dieRoll',
-                      translationParams: {"sides": _dieSides.toString()})),
+                  Text(
+                    context.translate('game.die.dieRoll',
+                        translationParams: {"sides": _dieSides.toString()}),
+                    style: fantasyDisplay(fontSize: 18),
+                  ),
                   IconButton(
                     icon: const Icon(Icons.close),
-                    color: Colors.grey,
+                    color: FantasyPalette.parchmentDim,
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -217,21 +224,28 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                 children: [
                   DropdownButtonFormField<int>(
                     initialValue: _dieSides,
-                    dropdownColor: Colors.white,
-                    focusColor: Colors.white,
+                    dropdownColor: FantasyPalette.obsidianLight,
+                    focusColor: FantasyPalette.obsidian,
+                    style: const TextStyle(color: FantasyPalette.parchment),
                     decoration: InputDecoration(
                       labelText: context.translate('game.die.dieType'),
+                      labelStyle:
+                          const TextStyle(color: FantasyPalette.parchmentDim),
                       border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide:
+                              const BorderSide(color: FantasyPalette.goldDim)),
                       contentPadding:
                           const EdgeInsets.symmetric(horizontal: 12),
                       filled: true,
-                      fillColor: Colors.grey[100],
+                      fillColor: FantasyPalette.obsidian,
                     ),
                     items: [2, 3, 4, 5, 6].map((sides) {
                       return DropdownMenuItem(
                         value: sides,
-                        child: Text("d$sides"),
+                        child: Text("d$sides",
+                            style: const TextStyle(
+                                color: FantasyPalette.parchment)),
                       );
                     }).toList(),
                     onChanged: (value) {
@@ -257,7 +271,7 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                       child: const Icon(
                         Icons.casino,
                         size: 48,
-                        color: ThemeColors.primary,
+                        color: FantasyPalette.gold,
                       ),
                     )
                   else if (rolledNumber == null)
@@ -275,7 +289,8 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                   else ...[
                     Text(
                       context.translate('game.die.dieRolled'),
-                      style: const TextStyle(fontSize: 16),
+                      style: const TextStyle(
+                          fontSize: 16, color: FantasyPalette.parchmentDim),
                     ),
                     const SizedBox(height: 8),
                     AnimatedSwitcher(
@@ -285,11 +300,8 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                       child: Text(
                         "$rolledNumber",
                         key: ValueKey(rolledNumber),
-                        style: const TextStyle(
-                          fontSize: 48,
-                          fontWeight: FontWeight.bold,
-                          color: ThemeColors.primary,
-                        ),
+                        style: fantasyDisplay(
+                            fontSize: 48, color: FantasyPalette.gold),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -345,14 +357,15 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
               // which doesn't line up with this dialog's own left/right
               // split and just looked like one hero spilling into the
               // other's column.
-              color: Colors.white,
+              color: FantasyPalette.obsidianLight,
               borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: FantasyPalette.gold),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  spreadRadius: 5,
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
+                  color: Colors.black.withValues(alpha: 0.4),
+                  spreadRadius: 2,
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
@@ -431,7 +444,7 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                           ),
                           Container(
                             width: 1,
-                            color: Colors.grey.shade400,
+                            color: FantasyPalette.goldDim,
                           ),
                           // Historique du joueur 1 - idem, teinté de sa
                           // propre couleur.
@@ -510,8 +523,11 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
               angle: inverted ? math.pi : 0,
               child: AlertDialog(
                 scrollable: true,
+                backgroundColor: FantasyPalette.obsidianLight,
+                surfaceTintColor: Colors.transparent,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
+                  side: const BorderSide(color: FantasyPalette.gold),
                 ),
                 insetPadding:
                     const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
@@ -521,37 +537,42 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.settings, color: Colors.black54),
+                          const Icon(Icons.settings,
+                              color: FantasyPalette.gold),
                           const SizedBox(width: 10),
                           Text(
                             context.translate('game.settings'),
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: fantasyDisplay(fontSize: 20),
                           ),
                         ],
                       ),
                       const Divider(
                         height: 25,
-                        color: ThemeColors.primary,
+                        color: FantasyPalette.gold,
                       ),
 
                       // Type de match
                       Text(
                         context.translate('game.matchType'),
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: FantasyPalette.parchment,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<MatchTypeEnum>(
                         initialValue: widget.matchType.type,
-                        dropdownColor: Colors.white,
-                        focusColor: Colors.white,
+                        dropdownColor: FantasyPalette.obsidianLight,
+                        focusColor: FantasyPalette.obsidian,
+                        style: const TextStyle(
+                            color: FantasyPalette.parchment),
                         decoration: InputDecoration(
                           filled: true,
-                          fillColor: Colors.grey[100],
+                          fillColor: FantasyPalette.obsidian,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
+                            borderSide:
+                                const BorderSide(color: FantasyPalette.goldDim),
                           ),
                           contentPadding:
                               const EdgeInsets.symmetric(horizontal: 12),
@@ -559,7 +580,9 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                         items: MatchTypeEnum.values.map((matchType) {
                           return DropdownMenuItem(
                             value: matchType,
-                            child: Text(matchType.displayName),
+                            child: Text(matchType.displayName,
+                                style: const TextStyle(
+                                    color: FantasyPalette.parchment)),
                           );
                         }).toList(),
                         onChanged: (value) {
@@ -574,7 +597,10 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                       // Joueur 1
                       Text(
                         "${context.translate('player.entityName')} 1",
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: FantasyPalette.parchment,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       _buildPlayerTile(widget.players[0], setModalState,
@@ -583,7 +609,10 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                       // Joueur 2
                       Text(
                         "${context.translate('player.entityName')} 2",
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: FantasyPalette.parchment,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       _buildPlayerTile(widget.players[1], setModalState,
@@ -593,7 +622,9 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                         children: [
                           TextButton(
                             onPressed: () => Navigator.of(context).pop(),
-                            child: Text(context.translate('common.cancel')),
+                            child: Text(context.translate('common.cancel'),
+                                style: const TextStyle(
+                                    color: FantasyPalette.gold)),
                           ),
                         ],
                       )
@@ -647,9 +678,9 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.grey[100],
+          color: FantasyPalette.obsidian,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade300),
+          border: Border.all(color: FantasyPalette.goldDim),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -667,10 +698,11 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                   CircleAvatar(radius: 14, backgroundColor: player.color),
                 const SizedBox(width: 10),
                 Text(_playerLabel(context, player),
-                    style: const TextStyle(fontSize: 16)),
+                    style: const TextStyle(
+                        fontSize: 16, color: FantasyPalette.parchment)),
               ],
             ),
-            const Icon(Icons.edit, size: 18, color: Colors.grey),
+            const Icon(Icons.edit, size: 18, color: FantasyPalette.gold),
           ],
         ),
       ),
@@ -874,9 +906,22 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
       child: Container(
         width: diameter,
         height: diameter,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.white,
+          color: FantasyPalette.obsidianLight,
+          border: Border.all(color: FantasyPalette.gold, width: 3),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.45),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+            BoxShadow(
+              color: FantasyPalette.gold.withValues(alpha: 0.3),
+              blurRadius: 16,
+              spreadRadius: 1,
+            ),
+          ],
         ),
         clipBehavior: Clip.antiAlias,
         child: Stack(
