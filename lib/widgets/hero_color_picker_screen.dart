@@ -61,64 +61,84 @@ class _HeroColorPickerScreenState extends State<HeroColorPickerScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Transform.rotate(
-      angle: widget.inverted ? math.pi : 0,
-      child: Scaffold(
-        backgroundColor: FantasyPalette.obsidian,
-        appBar: AppBar(
-          backgroundColor: FantasyPalette.obsidianLight,
-          surfaceTintColor: Colors.transparent,
-          title: Text(
-            context.translate('player.chooseAppearance'),
-            style: fantasyDisplay(fontSize: 20),
-          ),
-          foregroundColor: FantasyPalette.gold,
-          iconTheme: const IconThemeData(color: FantasyPalette.gold),
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(kToolbarHeight),
-            child: Container(
-              decoration: const BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(color: FantasyPalette.gold, width: 1),
+    // The hero grid below sizes each cell to a fixed height (avatar + a
+    // 2-line caption) - a boosted system/accessibility text scale factor
+    // was inflating that caption past what the cell left room for and
+    // overflowing. Capping it here (rather than disabling it) keeps larger
+    // text genuinely larger, just not enough to break this fixed-height
+    // grid or push the app bar title past the available width.
+    final clampedTextScaler =
+        MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.15);
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: clampedTextScaler),
+      child: Transform.rotate(
+        angle: widget.inverted ? math.pi : 0,
+        child: Scaffold(
+          backgroundColor: FantasyPalette.obsidian,
+          appBar: AppBar(
+            backgroundColor: FantasyPalette.obsidianLight,
+            surfaceTintColor: Colors.transparent,
+            // FittedBox instead of letting it ellipsize - "Choisir une
+            // apparence" in the Cinzel display face is wide, and shrinking
+            // it to fit stays fully readable where truncating to
+            // "Choisir une appar…" wouldn't.
+            title: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                context.translate('player.chooseAppearance'),
+                style: fantasyDisplay(fontSize: 20),
+              ),
+            ),
+            foregroundColor: FantasyPalette.gold,
+            iconTheme: const IconThemeData(color: FantasyPalette.gold),
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(kToolbarHeight),
+              child: Container(
+                decoration: const BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(color: FantasyPalette.gold, width: 1),
+                  ),
+                ),
+                child: TabBar(
+                  controller: _tabController,
+                  labelColor: FantasyPalette.gold,
+                  unselectedLabelColor: FantasyPalette.parchmentDim,
+                  indicatorColor: FantasyPalette.gold,
+                  tabs: [
+                    Tab(text: context.translate('player.color')),
+                    Tab(text: context.translate('player.hero')),
+                  ],
                 ),
               ),
-              child: TabBar(
-                controller: _tabController,
-                labelColor: FantasyPalette.gold,
-                unselectedLabelColor: FantasyPalette.parchmentDim,
-                indicatorColor: FantasyPalette.gold,
-                tabs: [
-                  Tab(text: context.translate('player.color')),
-                  Tab(text: context.translate('player.hero')),
-                ],
-              ),
             ),
           ),
-        ),
-        body: Column(
-          children: [
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildColorGrid(context),
-                  _buildHeroPicker(context),
-                ],
+          body: Column(
+            children: [
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildColorGrid(context),
+                    _buildHeroPicker(context),
+                  ],
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-              child: Text(
-                'Flesh and Blood™ is a registered trademark of Legend Story '
-                'Studios. Flesh and Blood™ and all associated images are '
-                'copyright © Legend Story Studios. All rights reserved.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                    fontSize: 9,
-                    color: FantasyPalette.parchmentDim.withValues(alpha: 0.6)),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                child: Text(
+                  'Flesh and Blood™ is a registered trademark of Legend Story '
+                  'Studios. Flesh and Blood™ and all associated images are '
+                  'copyright © Legend Story Studios. All rights reserved.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      fontSize: 9,
+                      color:
+                          FantasyPalette.parchmentDim.withValues(alpha: 0.6)),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -267,10 +287,11 @@ class _HeroColorPickerScreenState extends State<HeroColorPickerScreen>
         crossAxisCount: crossAxisCount,
         mainAxisSpacing: spacing,
         crossAxisSpacing: spacing,
-        // +44 not +36: the gold ring Container around the avatar adds its
-        // own border width on top of the avatar's diameter, which the old
-        // margin didn't leave room for and overflowed by a few pixels.
-        mainAxisExtent: avatarRadius * 2 + 44,
+        // Gold ring Container adds its own border width on top of the
+        // avatar's diameter, and the 2-line caption below it needs enough
+        // headroom to not clip even with a boosted text scale factor (now
+        // clamped above, but with some margin to spare).
+        mainAxisExtent: avatarRadius * 2 + 48,
       ),
       itemCount: heroes.length,
       itemBuilder: (context, index) {
