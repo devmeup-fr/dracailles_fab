@@ -885,7 +885,7 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
             Center(
               child: Image.asset(
                 'assets/images/logo_dracailles_full.png',
-                height: diameter * 0.9,
+                height: diameter * 1,
                 fit: BoxFit.contain,
               ),
             ),
@@ -938,7 +938,7 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
     // Back to the original edge-badge size now that it's pinned to the
     // side again - it no longer sits over the hero art, so there's no
     // need to keep it small.
-    final double circleDiameter = isCompact ? 140.0 : 160.0;
+    final double circleDiameter = isCompact ? 100.0 : 120.0;
     final double timerFontSize = circleDiameter * 0.16;
 
     return SizedBox.expand(

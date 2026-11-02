@@ -103,7 +103,8 @@ class _HeroArtCropState extends State<HeroArtCrop> {
     final size = _imageSize;
     final fallback = Image.asset(
       widget.assetPath,
-      fit: BoxFit.cover,
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.high,
       errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
     );
     // Not resolved yet (first frame) or failed to load: fall back to a
@@ -123,7 +124,7 @@ class _HeroArtCropState extends State<HeroArtCrop> {
         : 2 * widget.left / (1 - cropWidthFraction) - 1;
     final alignY = cropHeightFraction >= 1
         ? 0.0
-        : 2 * widget.top / (1 - cropHeightFraction) - 1;
+        : 1.85 * widget.top / (1 - cropHeightFraction) - 1;
 
     return ClipRect(
       child: FittedBox(
@@ -145,11 +146,17 @@ class _HeroArtCropState extends State<HeroArtCrop> {
             // Rendered at the image's own native size, so this is a pure
             // crop (via OverflowBox clipping) with no stretching - any
             // scaling happens once, uniformly, in the FittedBox above.
+            // These source photos are small (as low as ~450px wide) and a
+            // tight crop (the bordered-card calibration especially) can
+            // need to blow that up 2x+ to cover the tile - filterQuality
+            // high is the best Flutter can do to smooth that over; it
+            // can't add back detail the source doesn't have.
             child: Image.asset(
               widget.assetPath,
               width: size.width,
               height: size.height,
               fit: BoxFit.fill,
+              filterQuality: FilterQuality.high,
               errorBuilder: (context, error, stackTrace) =>
                   const SizedBox.shrink(),
             ),
