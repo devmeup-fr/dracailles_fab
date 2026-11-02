@@ -124,7 +124,7 @@ class _HeroArtCropState extends State<HeroArtCrop> {
         : 2 * widget.left / (1 - cropWidthFraction) - 1;
     final alignY = cropHeightFraction >= 1
         ? 0.0
-        : 1.85 * widget.top / (1 - cropHeightFraction) - 1;
+        : 2 * widget.top / (1 - cropHeightFraction) - 1;
 
     return ClipRect(
       child: FittedBox(

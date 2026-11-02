@@ -866,6 +866,7 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
   Widget _buildLogoButton({
     required double diameter,
     required double timerFontSize,
+    bool hasAnyHero = false,
   }) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -885,7 +886,7 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
             Center(
               child: Image.asset(
                 'assets/images/logo_dracailles_full.png',
-                height: diameter * 1,
+                height: diameter * (hasAnyHero ? 1 : 0.9),
                 fit: BoxFit.contain,
               ),
             ),
@@ -941,9 +942,8 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
     final bool hasAnyHero = widget.players.any((player) => player.hero != null);
     // Centered (no hero art around it) can go back to the bigger size;
     // pinned to the edge over a hero's face stays at the smaller one.
-    final double circleDiameter = hasAnyHero
-        ? (isCompact ? 100.0 : 120.0)
-        : (isCompact ? 140.0 : 160.0);
+    final double circleDiameter =
+        hasAnyHero ? (isCompact ? 100.0 : 120.0) : (isCompact ? 130.0 : 140.0);
     final double timerFontSize = circleDiameter * 0.16;
 
     return SizedBox.expand(
@@ -959,12 +959,11 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
           Align(
             alignment: hasAnyHero ? Alignment.centerRight : Alignment.center,
             child: Padding(
-              padding:
-                  EdgeInsets.only(right: hasAnyHero ? 8.0 : 0.0),
+              padding: EdgeInsets.only(right: hasAnyHero ? 8.0 : 0.0),
               child: _buildLogoButton(
-                diameter: circleDiameter,
-                timerFontSize: timerFontSize,
-              ),
+                  diameter: circleDiameter,
+                  timerFontSize: timerFontSize,
+                  hasAnyHero: hasAnyHero),
             ),
           ),
           // Big, obvious paused state instead of the small icon that used
