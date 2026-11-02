@@ -31,18 +31,11 @@ class _MatchScreenState extends State<MatchScreen>
   @override
   bool get wantKeepAlive => true;
 
-  final GlobalKey<LifeTrackerWidgetState> _player1Key = GlobalKey();
-  final GlobalKey<LifeTrackerWidgetState> _player2Key = GlobalKey();
-
   late List<GamePlayer> _players;
   GamePlayer? _winner;
   late List<HistoryEntry> _history;
 
   late MatchType _matchType;
-  // Tracks reversePlayers() state so it can be persisted/restored - without
-  // this, an app restart always put the original order back, undoing a
-  // reversal the player had made before.
-  bool _playersReversed = false;
 
   void initGame() {
     _winner = null;
@@ -89,7 +82,6 @@ class _MatchScreenState extends State<MatchScreen>
     final savedHistory = await Future.wait(
       [getPlayerHistory(0), getPlayerHistory(1)],
     );
-    final reversed = await getPlayersReversed();
     if (!mounted) return;
     setState(() {
       // _players[i] is still in its freshly-created, un-reversed order here
@@ -118,13 +110,6 @@ class _MatchScreenState extends State<MatchScreen>
       }
       _history = newHistory;
       _syncMatchTypeToHeroes();
-      // Applied last, after each player's own data is in place, so this
-      // only reorders the list (matching whichever layout was left before
-      // closing the app) without touching which data belongs to whom.
-      if (reversed) {
-        _playersReversed = true;
-        _players = List.from(_players.reversed);
-      }
     });
     _persistAllLife();
     _persistHistory();
@@ -235,16 +220,6 @@ class _MatchScreenState extends State<MatchScreen>
     _enableWakelockIfNeeded();
   }
 
-  void _reversePlayers() {
-    setState(() {
-      _players = List.from(_players.reversed);
-      _playersReversed = !_playersReversed;
-      _player1Key.currentState?.resetLife();
-      _player2Key.currentState?.resetLife();
-    });
-    savePlayersReversed(_playersReversed);
-  }
-
   void _setPlayers(List<GamePlayer> players) {
     setState(() {
       _players = players;
@@ -281,7 +256,6 @@ class _MatchScreenState extends State<MatchScreen>
           ),
           // Centered logo and action bar in a stacked layout
           BannerMatchWidget(
-              reversePlayers: _reversePlayers,
               resetGame: _resetGame,
               players: _players,
               setPlayers: _setPlayers,

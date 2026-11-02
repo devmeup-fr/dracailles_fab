@@ -17,7 +17,6 @@ import 'package:flutter/material.dart';
 
 class BannerMatchWidget extends StatefulWidget {
   final Function resetGame;
-  final Function reversePlayers;
   final List<GamePlayer> players;
   final Function setPlayers;
   final List<HistoryEntry> history;
@@ -27,7 +26,6 @@ class BannerMatchWidget extends StatefulWidget {
   const BannerMatchWidget(
       {super.key,
       required this.resetGame,
-      required this.reversePlayers,
       required this.players,
       required this.setPlayers,
       required this.history,
@@ -611,11 +609,9 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
       {required bool inverted}) {
     return GestureDetector(
       onTap: () async {
-        // player.index is a stable identity, not a screen position - it
-        // survives reversePlayers() reordering widget.players, unlike a
-        // plain 0/1 passed in from the call site would (that was a real
-        // bug: color/hero/life got saved and restored under the wrong
-        // player after a reversal).
+        // player.index is a stable identity, not a screen position - using
+        // it instead of a plain 0/1 from the call site is what keeps
+        // color/hero/life saved and restored under the right player.
         final idx = widget.players.indexWhere((p) => p.index == player.index);
         if (idx == -1) return;
         await Navigator.of(context).push(MaterialPageRoute(
@@ -767,7 +763,7 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                       },
                     ),
                     RadialAction(
-                      icon: Icons.history,
+                      icon: Icons.menu_book,
                       tooltip: context.translate('game.history'),
                       onTap: () {
                         _closeRadialMenu();
@@ -798,14 +794,6 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                             inverted: inverted,
                           ),
                         );
-                      },
-                    ),
-                    RadialAction(
-                      icon: Icons.swap_horiz,
-                      tooltip: context.translate('game.swapPlayer'),
-                      onTap: () {
-                        _closeRadialMenu();
-                        widget.reversePlayers();
                       },
                     ),
                     RadialAction(
@@ -878,70 +866,66 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
   Widget _buildLogoButton({
     required double diameter,
     required double timerFontSize,
-    required bool inverted,
   }) {
-    return Transform.rotate(
-      angle: inverted ? math.pi : 0,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => _openRadialMenu(inverted: inverted),
-        child: Container(
-          width: diameter,
-          height: diameter,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white,
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // Logo centré
-              Center(
-                child: Image.asset(
-                  'assets/images/logo_dracailles_full.png',
-                  height: diameter * 0.9,
-                  fit: BoxFit.contain,
-                ),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _openRadialMenu(inverted: false),
+      child: Container(
+        width: diameter,
+        height: diameter,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Logo centré
+            Center(
+              child: Image.asset(
+                'assets/images/logo_dracailles_full.png',
+                height: diameter * 0.9,
+                fit: BoxFit.contain,
               ),
+            ),
 
-              // Compteur en overlay (bas du cercle) - l'état pause a sa
-              // propre grande superposition au milieu de l'écran à la
-              // place d'une petite icône ici.
-              if (_timerDuration != _timeLeft)
-                Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 8.0),
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.6),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        child: Text(
-                          '${_timeLeft ~/ 60}:${(_timeLeft % 60).toString().padLeft(2, '0')}',
-                          style: TextStyle(
-                            fontSize: timerFontSize,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            shadows: const [
-                              Shadow(
-                                blurRadius: 2,
-                                color: Colors.black45,
-                                offset: Offset(0, 1),
-                              ),
-                            ],
-                          ),
+            // Compteur en overlay (bas du cercle) - l'état pause a sa
+            // propre grande superposition au milieu de l'écran à la
+            // place d'une petite icône ici.
+            if (_timerDuration != _timeLeft)
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      child: Text(
+                        '${_timeLeft ~/ 60}:${(_timeLeft % 60).toString().padLeft(2, '0')}',
+                        style: TextStyle(
+                          fontSize: timerFontSize,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          shadows: const [
+                            Shadow(
+                              blurRadius: 2,
+                              color: Colors.black45,
+                              offset: Offset(0, 1),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ),
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );
@@ -951,38 +935,21 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
     final bool isCompact = media.size.width < 360;
-    // Back to roughly the original single-badge size, now that each one is
-    // pinned to a screen edge instead of sitting over the hero art.
-    final double circleDiameter = isCompact ? 100.0 : 120.0;
+    // A single, smaller badge in the middle - two edge badges (one rotated
+    // for the opposing player) looked like two separate menus and players
+    // kept tapping the wrong one.
+    final double circleDiameter = isCompact ? 70.0 : 90.0;
     final double timerFontSize = circleDiameter * 0.16;
 
     return SizedBox.expand(
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Pinned to the left/right edges instead of the horizontal center,
-          // since hero art is usually centered on the card - this keeps
-          // both badges clear of the face no matter the hero.
           Align(
-            alignment: Alignment.centerLeft,
-            child: Padding(
-              padding: const EdgeInsets.only(left: 8.0),
-              child: _buildLogoButton(
-                diameter: circleDiameter,
-                timerFontSize: timerFontSize,
-                inverted: true,
-              ),
-            ),
-          ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Padding(
-              padding: const EdgeInsets.only(right: 8.0),
-              child: _buildLogoButton(
-                diameter: circleDiameter,
-                timerFontSize: timerFontSize,
-                inverted: false,
-              ),
+            alignment: Alignment.center,
+            child: _buildLogoButton(
+              diameter: circleDiameter,
+              timerFontSize: timerFontSize,
             ),
           ),
           // Big, obvious paused state instead of the small icon that used

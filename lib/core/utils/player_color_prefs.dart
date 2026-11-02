@@ -72,18 +72,3 @@ Future<List<int>> getPlayerHistory(int playerIndex) async {
   if (saved == null) return [];
   return saved.map(int.parse).toList();
 }
-
-/// Whether the match screen's two player slots are currently swapped
-/// (reversePlayers()) - saved so an app restart keeps the layout as the
-/// player left it instead of always coming back to the original order.
-const _playersReversedKey = 'players_reversed';
-
-Future<void> savePlayersReversed(bool reversed) async {
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setBool(_playersReversedKey, reversed);
-}
-
-Future<bool> getPlayersReversed() async {
-  final prefs = await SharedPreferences.getInstance();
-  return prefs.getBool(_playersReversedKey) ?? false;
-}
