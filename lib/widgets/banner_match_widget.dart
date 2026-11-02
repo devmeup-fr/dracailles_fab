@@ -903,9 +903,36 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
     Entry = null;
   }
 
+  /// Countdown pill, dead center of the screen - turns red under 10 minutes
+  /// left as a clear "wrap it up" warning instead of staying gold the whole
+  /// match.
+  Widget _buildTimerBadge() {
+    final urgent = _timeLeft < 600;
+    final color = urgent ? const Color(0xFFE05A4E) : FantasyPalette.gold;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: FantasyPalette.obsidianLight.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.4),
+            blurRadius: 10,
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        child: Text(
+          '${_timeLeft ~/ 60}:${(_timeLeft % 60).toString().padLeft(2, '0')}',
+          style: fantasyDisplay(fontSize: 22, color: color),
+        ),
+      ),
+    );
+  }
+
   Widget _buildLogoButton({
     required double diameter,
-    required double timerFontSize,
     bool hasAnyHero = false,
   }) {
     return GestureDetector(
@@ -932,54 +959,12 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
           ],
         ),
         clipBehavior: Clip.antiAlias,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Logo centré
-            Center(
-              child: Image.asset(
-                'assets/images/logo_dracailles_full.png',
-                height: diameter * (hasAnyHero ? 0.98 : 0.9),
-                fit: BoxFit.contain,
-              ),
-            ),
-
-            // Compteur en overlay (bas du cercle) - l'état pause a sa
-            // propre grande superposition au milieu de l'écran à la
-            // place d'une petite icône ici.
-            if (_timerDuration != _timeLeft)
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.6),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      child: Text(
-                        '${_timeLeft ~/ 60}:${(_timeLeft % 60).toString().padLeft(2, '0')}',
-                        style: TextStyle(
-                          fontSize: timerFontSize,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                          shadows: const [
-                            Shadow(
-                              blurRadius: 2,
-                              color: Colors.black45,
-                              offset: Offset(0, 1),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-          ],
+        child: Center(
+          child: Image.asset(
+            'assets/images/logo_dracailles_full.png',
+            height: diameter * (hasAnyHero ? 0.98 : 0.9),
+            fit: BoxFit.contain,
+          ),
         ),
       ),
     );
@@ -997,7 +982,6 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
     // pinned to the edge over a hero's face stays at the smaller one.
     final double circleDiameter =
         hasAnyHero ? (isCompact ? 100.0 : 120.0) : (isCompact ? 130.0 : 140.0);
-    final double timerFontSize = circleDiameter * 0.16;
 
     return SizedBox.expand(
       child: Stack(
@@ -1014,11 +998,23 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
             child: Padding(
               padding: EdgeInsets.only(right: hasAnyHero ? 8.0 : 0.0),
               child: _buildLogoButton(
-                  diameter: circleDiameter,
-                  timerFontSize: timerFontSize,
-                  hasAnyHero: hasAnyHero),
+                  diameter: circleDiameter, hasAnyHero: hasAnyHero),
             ),
           ),
+          // Always dead-center, regardless of where the badge itself sits -
+          // the timer matters equally to both players, so it doesn't belong
+          // tucked next to whichever edge the badge happens to be on. When
+          // the badge is ALSO centered (no hero in play), it's nudged below
+          // it instead of overlapping.
+          if (_timerDuration != _timeLeft)
+            Align(
+              alignment: Alignment.center,
+              child: Transform.translate(
+                offset: Offset(
+                    0, hasAnyHero ? 0 : circleDiameter / 2 + 22),
+                child: _buildTimerBadge(),
+              ),
+            ),
           // Big, obvious paused state instead of the small icon that used
           // to sit next to the timer - tapping it resumes, same as the
           // timer action in the radial menu.
