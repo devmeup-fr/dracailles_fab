@@ -886,7 +886,7 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
             Center(
               child: Image.asset(
                 'assets/images/logo_dracailles_full.png',
-                height: diameter * (hasAnyHero ? 1 : 0.9),
+                height: diameter * (hasAnyHero ? 0.98 : 0.9),
                 fit: BoxFit.contain,
               ),
             ),
