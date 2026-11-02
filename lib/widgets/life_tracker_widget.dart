@@ -149,74 +149,135 @@ class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
             // push-down was tried instead and just made the margins
             // uneven (cramped at the outer edge, loose at the seam) for
             // no real benefit over simply keeping the card a bit smaller.
-            var frameHeight = constraints.maxHeight * 0.62;
+            var frameHeight = constraints.maxHeight * 0.68;
             var frameWidth = frameHeight * cardAspect;
-            final maxFrameWidth = constraints.maxWidth * 0.68;
+            final maxFrameWidth = constraints.maxWidth * 0.74;
             if (frameWidth > maxFrameWidth) {
               frameWidth = maxFrameWidth;
               frameHeight = frameWidth / cardAspect;
             }
-            final medallionSize = frameWidth * 0.62;
+            var medallionSize = frameWidth * 0.62;
+            // The medallion overlaps the frame's bottom edge by half its
+            // own size, so that's its actual contribution to the card's
+            // total visual footprint - NOT frameHeight + medallionSize.
+            // This used to be built as a Column with the medallion
+            // Transform.translate'd up into the overlap: that only moves
+            // where the medallion PAINTS, not the space the Column
+            // reserves for it during layout, so the Column always thought
+            // it needed the full frameHeight + medallionSize (no overlap
+            // credited) - a hard cap keyed off the correct, smaller height
+            // below never actually got to fire before the real, bigger
+            // Column had already overflowed. Building it as a Stack sized
+            // to the true visual height instead makes the two agree.
+            var cardHeight = frameHeight + medallionSize * 0.5;
+            final cardWidth =
+                frameWidth > medallionSize ? frameWidth : medallionSize;
+            // Hard cap: whatever the size multipliers above are tuned to,
+            // the card must still fit the tile it's drawn in - a tall
+            // narrow tile (a small phone, a bumped text/UI scale, …) can
+            // make even a "reasonable looking" ratio run a few pixels
+            // taller than what's actually available, which is what was
+            // showing up as a RenderFlex overflow at the tile's edge.
+            // Scaling every dimension down by the same factor keeps the
+            // card's own proportions (and the art's crop) unchanged.
+            if (cardHeight > constraints.maxHeight) {
+              final shrink = constraints.maxHeight / cardHeight;
+              frameHeight *= shrink;
+              frameWidth *= shrink;
+              medallionSize *= shrink;
+              cardHeight = constraints.maxHeight;
+            }
 
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TweenAnimationBuilder<double>(
-                    key: ValueKey(_pulseTick),
-                    tween: Tween(begin: 1.35, end: 1.0),
-                    duration: const Duration(milliseconds: 320),
-                    curve: Curves.easeOut,
-                    builder: (context, glowStrength, child) => OrnateFrame(
-                      width: frameWidth,
-                      height: frameHeight,
-                      accentColor: widget.gamePlayer.color,
-                      glowStrength: glowStrength,
-                      child: child!,
-                    ),
-                    child: _buildHeroArt(hero),
-                  ),
-                  // Overlaps the frame's bottom edge like a card's own
-                  // power/life gem, instead of floating bare digits
-                  // over the art.
-                  Transform.translate(
-                    offset: Offset(0, -medallionSize * 0.5),
-                    child: Container(
-                      width: medallionSize,
-                      height: medallionSize,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: FantasyPalette.obsidianLight,
-                        border: Border.all(
-                          color: FantasyPalette.gold,
-                          width: 3,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color:
-                                widget.gamePlayer.color.withValues(alpha: 0.6),
-                            blurRadius: 16,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
+            // A plain Center() put the card right in the middle, but it
+            // reads better nudged down a bit, toward the timer pill at the
+            // seam, than dead-center. Shifting the already-sized card via
+            // alignment (rather than e.g. a fixed-size spacer added to its
+            // layout) doesn't grow it, so it's capped at whatever slack
+            // actually exists above and below it - worst case it just
+            // ends up back at dead center instead of overflowing.
+            const desiredDownShift = 0.0;
+            final slack = (constraints.maxHeight - cardHeight)
+                .clamp(0.0, double.infinity);
+            final halfSlack = slack / 2;
+            final alignY = halfSlack > 0
+                ? (desiredDownShift / halfSlack).clamp(0.0, 1.0)
+                : 0.0;
+
+            return Align(
+              alignment: Alignment(0, alignY),
+              child: SizedBox(
+                width: cardWidth,
+                height: cardHeight,
+                child: Stack(
+                  children: [
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
                       child: Center(
-                        child: FittedBox(
-                          fit: BoxFit.contain,
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Text(
-                              widget.gamePlayer.life.toString(),
-                              style: fantasyDisplay(
-                                fontSize: medallionSize * 0.52,
+                        child: TweenAnimationBuilder<double>(
+                          key: ValueKey(_pulseTick),
+                          tween: Tween(begin: 1.35, end: 1.0),
+                          duration: const Duration(milliseconds: 320),
+                          curve: Curves.easeOut,
+                          builder: (context, glowStrength, child) =>
+                              OrnateFrame(
+                            width: frameWidth,
+                            height: frameHeight,
+                            accentColor: widget.gamePlayer.color,
+                            glowStrength: glowStrength,
+                            child: child!,
+                          ),
+                          child: _buildHeroArt(hero),
+                        ),
+                      ),
+                    ),
+                    // Overlaps the frame's bottom edge like a card's own
+                    // power/life gem, instead of floating bare digits
+                    // over the art.
+                    Positioned(
+                      top: frameHeight - medallionSize * 0.5,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: Container(
+                          width: medallionSize,
+                          height: medallionSize,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: FantasyPalette.obsidianLight,
+                            border: Border.all(
+                              color: FantasyPalette.gold,
+                              width: 3,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: widget.gamePlayer.color
+                                    .withValues(alpha: 0.6),
+                                blurRadius: 16,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: FittedBox(
+                              fit: BoxFit.contain,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Text(
+                                  widget.gamePlayer.life.toString(),
+                                  style: fantasyDisplay(
+                                    fontSize: medallionSize * 0.52,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           }),
