@@ -940,20 +940,26 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
     // need to keep it small.
     final double circleDiameter = isCompact ? 100.0 : 120.0;
     final double timerFontSize = circleDiameter * 0.16;
+    // Only needs to dodge the edge when there's hero art to dodge - with
+    // both players on a plain color there's nothing for it to cover, so it
+    // stays dead-center instead of looking randomly off to one side.
+    final bool hasAnyHero = widget.players.any((player) => player.hero != null);
 
     return SizedBox.expand(
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Off to the right instead of dead-center: centering it needed
-          // an ugly blank strip between the two tiles just to keep it off
-          // the hero art - hero heads sit more centrally, so the edge is
-          // naturally clearer. The radial menu it opens still fans out
-          // from the middle of the screen regardless (_openRadialMenu).
+          // Off to the right instead of dead-center when a hero is in
+          // play: centering it needed an ugly blank strip between the two
+          // tiles just to keep it off the hero art, and hero heads sit
+          // more centrally, so the edge is naturally clearer there. The
+          // radial menu it opens still fans out from the middle of the
+          // screen regardless (_openRadialMenu).
           Align(
-            alignment: Alignment.centerRight,
+            alignment: hasAnyHero ? Alignment.centerRight : Alignment.center,
             child: Padding(
-              padding: const EdgeInsets.only(right: 8.0),
+              padding:
+                  EdgeInsets.only(right: hasAnyHero ? 8.0 : 0.0),
               child: _buildLogoButton(
                 diameter: circleDiameter,
                 timerFontSize: timerFontSize,
