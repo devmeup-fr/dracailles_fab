@@ -87,21 +87,26 @@ class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
   }
 
   Widget _buildHeroArt(FabHero hero) {
-    // Bordered cards follow a consistent template: title bar from 0-~12%,
-    // art from there down to ~62% (then a rules text box), confirmed across
-    // several samples. Full-art photos have no title bar and keep art
-    // almost to the very bottom (HeroArtCrop's own defaults). The frame
-    // below is now sized close to the source photo's own aspect ratio, so
-    // this crop barely has to zoom to cover it - unlike the old edge-to-edge
-    // tile, which forced a much heavier (and blurrier) upscale.
+    // Bordered cards follow a consistent template: title plate (with a
+    // flourish that dips further down than the plate's own flat body) down
+    // to a gold-scrollwork rules-box border. Measured pixel-by-pixel across
+    // several samples (Dorinthea, Dorinthea Ironsong, Levia, Levia
+    // Shadowborn Abomination): the title flourish's lowest point lands
+    // anywhere up to ~12.6% of the image height, and the rules-box border's
+    // earliest start is ~59.4% - the previous 12%/62% window clipped
+    // straight through both, which is what was showing as a thin gold edge
+    // at the top and bottom of the framed card. These add a safety margin
+    // on top of the measured range instead of sitting right at it.
+    // Full-art photos have no title bar and keep art almost to the very
+    // bottom (HeroArtCrop's own defaults).
     return hero.isFullArt
         ? HeroArtCrop(assetPath: hero.photoPath)
         : HeroArtCrop(
             assetPath: hero.photoPath,
             left: 0.05,
-            top: 0.12,
+            top: 0.14,
             right: 0.95,
-            bottom: 0.62,
+            bottom: 0.575,
           );
   }
 
@@ -132,22 +137,29 @@ class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
               ),
             ),
           ),
-          Center(
-            child: LayoutBuilder(builder: (context, constraints) {
-              // Flesh and Blood's own card ratio (63x88mm) - sizing the
-              // frame to it is what lets the hero art inside sit close
-              // to its native aspect instead of needing a heavy crop.
-              const cardAspect = 63 / 88;
-              var frameHeight = constraints.maxHeight * 0.6;
-              var frameWidth = frameHeight * cardAspect;
-              final maxFrameWidth = constraints.maxWidth * 0.66;
-              if (frameWidth > maxFrameWidth) {
-                frameWidth = maxFrameWidth;
-                frameHeight = frameWidth / cardAspect;
-              }
-              final medallionSize = frameWidth * 0.62;
+          LayoutBuilder(builder: (context, constraints) {
+            // Flesh and Blood's own card ratio (63x88mm) - sizing the
+            // frame to it is what lets the hero art inside sit close
+            // to its native aspect instead of needing a heavy crop.
+            const cardAspect = 63 / 88;
+            // A bit bigger than the original pass (0.6/0.66) - there was
+            // too much bare table around the card - but not pushed so far
+            // that a plain, evenly-centered margin stops clearing
+            // BannerMatchWidget's dead-center timer pill: a biased
+            // push-down was tried instead and just made the margins
+            // uneven (cramped at the outer edge, loose at the seam) for
+            // no real benefit over simply keeping the card a bit smaller.
+            var frameHeight = constraints.maxHeight * 0.62;
+            var frameWidth = frameHeight * cardAspect;
+            final maxFrameWidth = constraints.maxWidth * 0.68;
+            if (frameWidth > maxFrameWidth) {
+              frameWidth = maxFrameWidth;
+              frameHeight = frameWidth / cardAspect;
+            }
+            final medallionSize = frameWidth * 0.62;
 
-              return Column(
+            return Center(
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TweenAnimationBuilder<double>(
@@ -205,9 +217,9 @@ class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
                     ),
                   ),
                 ],
-              );
-            }),
-          ),
+              ),
+            );
+          }),
         ],
       ),
     );

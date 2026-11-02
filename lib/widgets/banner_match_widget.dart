@@ -691,25 +691,27 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
           border: Border.all(color: FantasyPalette.goldDim),
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                if (player.hero != null)
-                  CircleAvatar(
-                    radius: 14,
-                    backgroundColor: player.color,
-                    backgroundImage: AssetImage(player.hero!.thumbnailPath),
-                    onBackgroundImageError: (exception, stackTrace) {},
-                  )
-                else
-                  CircleAvatar(radius: 14, backgroundColor: player.color),
-                const SizedBox(width: 10),
-                Text(_playerLabel(context, player),
-                    style: const TextStyle(
-                        fontSize: 16, color: FantasyPalette.parchment)),
-              ],
+            if (player.hero != null)
+              CircleAvatar(
+                radius: 14,
+                backgroundColor: player.color,
+                backgroundImage: AssetImage(player.hero!.thumbnailPath),
+                onBackgroundImageError: (exception, stackTrace) {},
+              )
+            else
+              CircleAvatar(radius: 14, backgroundColor: player.color),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                _playerLabel(context, player),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    fontSize: 16, color: FantasyPalette.parchment),
+              ),
             ),
+            const SizedBox(width: 8),
             const Icon(Icons.edit, size: 18, color: FantasyPalette.gold),
           ],
         ),
@@ -1010,8 +1012,7 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
             Align(
               alignment: Alignment.center,
               child: Transform.translate(
-                offset: Offset(
-                    0, hasAnyHero ? 0 : circleDiameter / 2 + 22),
+                offset: Offset(0, hasAnyHero ? 0 : circleDiameter / 2 + 22),
                 child: _buildTimerBadge(),
               ),
             ),
