@@ -373,22 +373,31 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      _playerLabel(context, widget.players[0]),
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        color: widget.players[0].color,
+                    Expanded(
+                      child: Text(
+                        _playerLabel(context, widget.players[0]),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                          color: widget.players[0].color,
+                        ),
                       ),
                     ),
-                    Text(
-                      _playerLabel(context, widget.players[1]),
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        color: widget.players[1].color,
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _playerLabel(context, widget.players[1]),
+                        textAlign: TextAlign.right,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                          color: widget.players[1].color,
+                        ),
                       ),
                     ),
                   ],
@@ -564,8 +573,7 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
                         initialValue: widget.matchType.type,
                         dropdownColor: FantasyPalette.obsidianLight,
                         focusColor: FantasyPalette.obsidian,
-                        style: const TextStyle(
-                            color: FantasyPalette.parchment),
+                        style: const TextStyle(color: FantasyPalette.parchment),
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: FantasyPalette.obsidian,

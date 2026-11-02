@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:fab_dracailles/core/data/fab_heroes.dart';
 import 'package:fab_dracailles/core/utils/localization_util.dart';
+import 'package:fab_dracailles/theme/fantasy_theme.dart';
 import 'package:flutter/material.dart';
 
 /// Full screen (pushed via Navigator, never a stacked dialog) letting the
@@ -63,22 +64,35 @@ class _HeroColorPickerScreenState extends State<HeroColorPickerScreen>
     return Transform.rotate(
       angle: widget.inverted ? math.pi : 0,
       child: Scaffold(
+        backgroundColor: FantasyPalette.obsidian,
         appBar: AppBar(
+          backgroundColor: FantasyPalette.obsidianLight,
+          surfaceTintColor: Colors.transparent,
           title: Text(
             context.translate('player.chooseAppearance'),
-            style: const TextStyle(color: Colors.white),
+            style: fantasyDisplay(fontSize: 20),
           ),
-          foregroundColor: Colors.white,
-          iconTheme: const IconThemeData(color: Colors.white),
-          bottom: TabBar(
-            controller: _tabController,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white70,
-            indicatorColor: Colors.white,
-            tabs: [
-              Tab(text: context.translate('player.color')),
-              Tab(text: context.translate('player.hero')),
-            ],
+          foregroundColor: FantasyPalette.gold,
+          iconTheme: const IconThemeData(color: FantasyPalette.gold),
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(kToolbarHeight),
+            child: Container(
+              decoration: const BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: FantasyPalette.gold, width: 1),
+                ),
+              ),
+              child: TabBar(
+                controller: _tabController,
+                labelColor: FantasyPalette.gold,
+                unselectedLabelColor: FantasyPalette.parchmentDim,
+                indicatorColor: FantasyPalette.gold,
+                tabs: [
+                  Tab(text: context.translate('player.color')),
+                  Tab(text: context.translate('player.hero')),
+                ],
+              ),
+            ),
           ),
         ),
         body: Column(
@@ -99,7 +113,9 @@ class _HeroColorPickerScreenState extends State<HeroColorPickerScreen>
                 'Studios. Flesh and Blood™ and all associated images are '
                 'copyright © Legend Story Studios. All rights reserved.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 9, color: Colors.grey[600]),
+                style: TextStyle(
+                    fontSize: 9,
+                    color: FantasyPalette.parchmentDim.withValues(alpha: 0.6)),
               ),
             ),
           ],
@@ -124,7 +140,19 @@ class _HeroColorPickerScreenState extends State<HeroColorPickerScreen>
             widget.onColorSelected(color);
             Navigator.of(context).pop();
           },
-          child: CircleAvatar(radius: 28, backgroundColor: color),
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: FantasyPalette.gold, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.5),
+                  blurRadius: 8,
+                ),
+              ],
+            ),
+            child: CircleAvatar(radius: 26, backgroundColor: color),
+          ),
         );
       },
     );
@@ -147,6 +175,13 @@ class _HeroColorPickerScreenState extends State<HeroColorPickerScreen>
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
           child: SegmentedButton<bool>(
+            style: SegmentedButton.styleFrom(
+              backgroundColor: FantasyPalette.obsidianLight,
+              foregroundColor: FantasyPalette.parchmentDim,
+              selectedBackgroundColor: FantasyPalette.gold,
+              selectedForegroundColor: FantasyPalette.obsidian,
+              side: const BorderSide(color: FantasyPalette.gold),
+            ),
             segments: [
               ButtonSegment(
                 value: false,
@@ -167,7 +202,7 @@ class _HeroColorPickerScreenState extends State<HeroColorPickerScreen>
               ? Center(
                   child: Text(
                     context.translate('player.noHeroes'),
-                    style: TextStyle(color: Colors.grey[600]),
+                    style: const TextStyle(color: FantasyPalette.parchmentDim),
                   ),
                 )
               : LayoutBuilder(builder: (context, constraints) {
@@ -179,8 +214,8 @@ class _HeroColorPickerScreenState extends State<HeroColorPickerScreen>
                   const idealCellWidth = 84.0;
                   final availableWidth =
                       constraints.maxWidth - horizontalPadding * 2;
-                  final crossAxisCount = math.max(
-                      4, (availableWidth / idealCellWidth).floor());
+                  final crossAxisCount =
+                      math.max(4, (availableWidth / idealCellWidth).floor());
                   final cellWidth =
                       (availableWidth - spacing * (crossAxisCount - 1)) /
                           crossAxisCount;
@@ -199,8 +234,8 @@ class _HeroColorPickerScreenState extends State<HeroColorPickerScreen>
                         const SizedBox(height: 20),
                         Text(
                           context.translate('player.livingLegend'),
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w600, fontSize: 16),
+                          style: fantasyDisplay(
+                              fontSize: 16, color: FantasyPalette.gold),
                         ),
                         const SizedBox(height: 12),
                         _buildHeroGrid(
@@ -232,7 +267,10 @@ class _HeroColorPickerScreenState extends State<HeroColorPickerScreen>
         crossAxisCount: crossAxisCount,
         mainAxisSpacing: spacing,
         crossAxisSpacing: spacing,
-        mainAxisExtent: avatarRadius * 2 + 36,
+        // +44 not +36: the gold ring Container around the avatar adds its
+        // own border width on top of the avatar's diameter, which the old
+        // margin didn't leave room for and overflowed by a few pixels.
+        mainAxisExtent: avatarRadius * 2 + 44,
       ),
       itemCount: heroes.length,
       itemBuilder: (context, index) {
@@ -244,11 +282,17 @@ class _HeroColorPickerScreenState extends State<HeroColorPickerScreen>
           },
           child: Column(
             children: [
-              CircleAvatar(
-                radius: avatarRadius,
-                backgroundColor: Colors.grey[300],
-                backgroundImage: AssetImage(hero.thumbnailPath),
-                onBackgroundImageError: (exception, stackTrace) {},
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: FantasyPalette.gold, width: 2),
+                ),
+                child: CircleAvatar(
+                  radius: avatarRadius,
+                  backgroundColor: FantasyPalette.obsidianLight,
+                  backgroundImage: AssetImage(hero.thumbnailPath),
+                  onBackgroundImageError: (exception, stackTrace) {},
+                ),
               ),
               const SizedBox(height: 4),
               Text(
@@ -256,7 +300,8 @@ class _HeroColorPickerScreenState extends State<HeroColorPickerScreen>
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 11),
+                style: const TextStyle(
+                    fontSize: 11, color: FantasyPalette.parchment),
               ),
             ],
           ),

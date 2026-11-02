@@ -4,6 +4,7 @@ import 'package:fab_dracailles/core/data/fab_heroes.dart';
 import 'package:fab_dracailles/core/utils/player_color_prefs.dart';
 import 'package:fab_dracailles/models/game_player_model.dart';
 import 'package:fab_dracailles/models/match_type_model.dart';
+import 'package:fab_dracailles/theme/fantasy_theme.dart';
 import 'package:fab_dracailles/widgets/hero_color_picker_screen.dart';
 import 'package:flutter/material.dart';
 
@@ -81,13 +82,27 @@ class _PlayersAppearanceScreenState extends State<PlayersAppearanceScreen> {
   Widget _buildBubble(GamePlayer player) {
     return GestureDetector(
       onTap: () => _editPlayer(player.index),
-      child: CircleAvatar(
-        radius: 48,
-        backgroundColor: player.color,
-        backgroundImage:
-            player.hero != null ? AssetImage(player.hero!.thumbnailPath) : null,
-        onBackgroundImageError:
-            player.hero != null ? (exception, stackTrace) {} : null,
+      child: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: FantasyPalette.gold, width: 3),
+          boxShadow: [
+            BoxShadow(
+              color: player.color.withValues(alpha: 0.6),
+              blurRadius: 18,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: CircleAvatar(
+          radius: 48,
+          backgroundColor: player.color,
+          backgroundImage: player.hero != null
+              ? AssetImage(player.hero!.thumbnailPath)
+              : null,
+          onBackgroundImageError:
+              player.hero != null ? (exception, stackTrace) {} : null,
+        ),
       ),
     );
   }
@@ -97,8 +112,12 @@ class _PlayersAppearanceScreenState extends State<PlayersAppearanceScreen> {
     return Transform.rotate(
       angle: widget.inverted ? math.pi : 0,
       child: Dialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: FantasyPalette.obsidianLight,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: FantasyPalette.gold),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(28),
           child: Column(
