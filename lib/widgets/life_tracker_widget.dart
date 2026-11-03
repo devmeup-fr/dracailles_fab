@@ -11,12 +11,18 @@ class LifeTrackerWidget extends StatefulWidget {
   final GamePlayer gamePlayer;
   final bool invertMode;
   final void Function(int amount) onLifeChanged;
+  // Shown as a small, faint readout near the seam - reading the opponent's
+  // own big number means either deciphering it upside down or physically
+  // turning the phone; this is always right-side up for whoever's tile
+  // it's drawn in.
+  final int opponentLife;
 
   const LifeTrackerWidget({
     super.key,
     required this.gamePlayer,
     this.invertMode = false,
     required this.onLifeChanged,
+    required this.opponentLife,
   });
 
   @override
@@ -84,6 +90,50 @@ class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
 
   void _stopLongPressTimer() {
     _longPressTimer?.cancel();
+  }
+
+  // Full-opacity gold plus a dark outline instead of a half-transparent
+  // parchment tint - the dim version read fine against the dark table but
+  // nearly disappeared against a bright flat player color, since it had
+  // no contrast mechanism besides opacity.
+  TextStyle get _tapHintStyle => fantasyDisplay(
+        fontSize: 34,
+        color: FantasyPalette.gold,
+      ).copyWith(shadows: const [
+        Shadow(color: Colors.black54, blurRadius: 6),
+        Shadow(color: Colors.black54, blurRadius: 2),
+      ]);
+
+  /// A plain "6" and "9" can look like each other read upside down - by
+  /// the opponent glancing across, or in [opponentLife]'s own faint
+  /// readout below. Anchoring a dot to the same corner (lower-right)
+  /// regardless of which digit it is means a genuinely-rotated one shows
+  /// its dot in the wrong corner (upper-left) instead of quietly landing
+  /// on top of where the other digit's own dot would be.
+  Widget _buildLifeNumber(
+    int life, {
+    required double fontSize,
+    Color color = FantasyPalette.parchment,
+  }) {
+    final style = fantasyDisplay(fontSize: fontSize, color: color);
+    if (life != 6 && life != 9) {
+      return Text(life.toString(), style: style);
+    }
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Text(life.toString(), style: style),
+        Positioned(
+          right: -fontSize * 0.05,
+          bottom: fontSize * 0.02,
+          child: Container(
+            width: fontSize * 0.12,
+            height: fontSize * 0.12,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildHeroArt(FabHero hero) {
@@ -156,7 +206,10 @@ class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
               frameWidth = maxFrameWidth;
               frameHeight = frameWidth / cardAspect;
             }
-            var medallionSize = frameWidth * 0.62;
+            // Smaller than the frame itself (was 0.62) - frees up enough
+            // room that the card can actually use desiredDownShift below
+            // instead of the slack being eaten entirely by the medallion.
+            var medallionSize = frameWidth * 0.5;
             // The medallion overlaps the frame's bottom edge by half its
             // own size, so that's its actual contribution to the card's
             // total visual footprint - NOT frameHeight + medallionSize.
@@ -195,7 +248,7 @@ class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
             // layout) doesn't grow it, so it's capped at whatever slack
             // actually exists above and below it - worst case it just
             // ends up back at dead center instead of overflowing.
-            const desiredDownShift = 0.0;
+            const desiredDownShift = 24.0;
             final slack = (constraints.maxHeight - cardHeight)
                 .clamp(0.0, double.infinity);
             final halfSlack = slack / 2;
@@ -264,11 +317,9 @@ class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
                               fit: BoxFit.contain,
                               child: Padding(
                                 padding: const EdgeInsets.all(8.0),
-                                child: Text(
-                                  widget.gamePlayer.life.toString(),
-                                  style: fantasyDisplay(
-                                    fontSize: medallionSize * 0.52,
-                                  ),
+                                child: _buildLifeNumber(
+                                  widget.gamePlayer.life,
+                                  fontSize: medallionSize * 0.52,
                                 ),
                               ),
                             ),
@@ -305,9 +356,10 @@ class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
               curve: Curves.easeOut,
               builder: (context, scale, child) =>
                   Transform.scale(scale: scale, child: child),
-              child: Text(
-                widget.gamePlayer.life.toString(),
-                style: fantasyDisplay(fontSize: 150, color: Colors.white),
+              child: _buildLifeNumber(
+                widget.gamePlayer.life,
+                fontSize: 150,
+                color: Colors.white,
               ),
             ),
           ),
@@ -331,6 +383,28 @@ class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
               child:
                   hero != null ? _buildHeroCard(hero) : _buildFlatColorFill(),
             ),
+            // The opponent's own number sits in their tile, the one that's
+            // rotated for them - reading it means either decoding it
+            // upside down or physically turning the phone. This small,
+            // faint copy lives in THIS tile instead, so it's already right
+            // side up here. Anchored to local bottom-left: for the normal
+            // (non-inverted) tile that's screen bottom-left as-is, and the
+            // inverted tile's own 180° rotation carries that same local
+            // corner to screen top-right - each player gets it at "their
+            // own bottom-left" without needing separate per-tile logic.
+            Align(
+              alignment: Alignment.bottomLeft,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 14.0, bottom: 10.0),
+                child: Opacity(
+                  opacity: 0.45,
+                  child: _buildLifeNumber(
+                    widget.opponentLife,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
             // Faint tap-zone hints, out at the edges rather than hugging
             // the medallion - the card and its life total stay the clear
             // focal point, these just confirm which side does what.
@@ -340,10 +414,7 @@ class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
                 padding: const EdgeInsets.only(left: 18.0),
                 child: Text(
                   '-',
-                  style: fantasyDisplay(
-                    fontSize: 34,
-                    color: FantasyPalette.parchmentDim.withValues(alpha: 0.5),
-                  ),
+                  style: _tapHintStyle,
                 ),
               ),
             ),
@@ -353,10 +424,7 @@ class LifeTrackerWidgetState extends State<LifeTrackerWidget> {
                 padding: const EdgeInsets.only(right: 18.0),
                 child: Text(
                   '+',
-                  style: fantasyDisplay(
-                    fontSize: 34,
-                    color: FantasyPalette.parchmentDim.withValues(alpha: 0.5),
-                  ),
+                  style: _tapHintStyle,
                 ),
               ),
             ),

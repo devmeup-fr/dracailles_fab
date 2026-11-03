@@ -905,29 +905,45 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
     Entry = null;
   }
 
-  /// Countdown pill, dead center of the screen - turns red under 10 minutes
-  /// left as a clear "wrap it up" warning instead of staying gold the whole
-  /// match.
+  /// Countdown pill - turns red under 10 minutes left as a clear "wrap it
+  /// up" warning instead of staying gold the whole match. Tapping it
+  /// pauses/resumes directly, the same action as the timer icon in the
+  /// radial menu, without needing to open that menu first.
   Widget _buildTimerBadge() {
     final urgent = _timeLeft < 600;
     final color = urgent ? const Color(0xFFE05A4E) : FantasyPalette.gold;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: FantasyPalette.obsidianLight.withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color, width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.4),
-            blurRadius: 10,
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _timerStarted ? toggleTimer() : startTimer(),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: FantasyPalette.obsidianLight.withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.4),
+              blurRadius: 10,
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                !_timerPause && _timerStarted ? Icons.pause : Icons.play_arrow,
+                color: color,
+                size: 18,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '${_timeLeft ~/ 60}:${(_timeLeft % 60).toString().padLeft(2, '0')}',
+                style: fantasyDisplay(fontSize: 22, color: color),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        child: Text(
-          '${_timeLeft ~/ 60}:${(_timeLeft % 60).toString().padLeft(2, '0')}',
-          style: fantasyDisplay(fontSize: 22, color: color),
         ),
       ),
     );
@@ -989,33 +1005,42 @@ class _BannerMatchWidgetState extends State<BannerMatchWidget> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Off to the right instead of dead-center when a hero is in
-          // play: centering it needed an ugly blank strip between the two
-          // tiles just to keep it off the hero art, and hero heads sit
-          // more centrally, so the edge is naturally clearer there. The
-          // radial menu it opens still fans out from the middle of the
-          // screen regardless (_openRadialMenu).
+          // Dead center - now that each player's timer sits off to its own
+          // side (below) instead of sharing the middle, there's nothing
+          // left there for the badge to collide with regardless of
+          // whether a hero's in play. The radial menu it opens still fans
+          // out from the middle of the screen either way (_openRadialMenu).
           Align(
-            alignment: hasAnyHero ? Alignment.centerRight : Alignment.center,
-            child: Padding(
-              padding: EdgeInsets.only(right: hasAnyHero ? 8.0 : 0.0),
-              child: _buildLogoButton(
-                  diameter: circleDiameter, hasAnyHero: hasAnyHero),
-            ),
+            alignment: Alignment.center,
+            child: _buildLogoButton(
+                diameter: circleDiameter, hasAnyHero: hasAnyHero),
           ),
-          // Always dead-center, regardless of where the badge itself sits -
-          // the timer matters equally to both players, so it doesn't belong
-          // tucked next to whichever edge the badge happens to be on. When
-          // the badge is ALSO centered (no hero in play), it's nudged below
-          // it instead of overlapping.
-          if (_timerDuration != _timeLeft)
+          // One copy per player instead of a single shared one at the seam -
+          // each sits toward its own corner (bottom-right for the normal
+          // tile, top-left for the inverted one - mirror images of each
+          // other, so both read as "my own bottom-right" from that
+          // player's own seated angle), rotated to read right-side up for
+          // them, same as everything else they open. Both control the same
+          // timer, so either one pauses or resumes it.
+          if (_timerDuration != _timeLeft) ...[
             Align(
-              alignment: Alignment.center,
-              child: Transform.translate(
-                offset: Offset(0, hasAnyHero ? 0 : circleDiameter / 2 + 22),
+              alignment: Alignment.topLeft,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 10.0, left: 10.0),
+                child: Transform.rotate(
+                  angle: math.pi,
+                  child: _buildTimerBadge(),
+                ),
+              ),
+            ),
+            Align(
+              alignment: Alignment.bottomRight,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 10.0, right: 10.0),
                 child: _buildTimerBadge(),
               ),
             ),
+          ],
           // Big, obvious paused state instead of the small icon that used
           // to sit next to the timer - tapping it resumes, same as the
           // timer action in the radial menu.

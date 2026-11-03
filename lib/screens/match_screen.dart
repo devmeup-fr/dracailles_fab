@@ -242,12 +242,14 @@ class _MatchScreenState extends State<MatchScreen>
               LifeTrackerWidget(
                 gamePlayer: _players[1],
                 invertMode: true,
+                opponentLife: _players[0].life,
                 onLifeChanged: (amount) {
                   addToHistory(_players[1]);
                 },
               ),
               LifeTrackerWidget(
                 gamePlayer: _players[0],
+                opponentLife: _players[1].life,
                 onLifeChanged: (amount) {
                   addToHistory(_players[0]);
                 },
